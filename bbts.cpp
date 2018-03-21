@@ -429,17 +429,21 @@ void loadData_csv(indices_t ins, args_t args, double* alpha){
 
 void loadData_vegas(indices_t ins, args_t args, double* alpha){
   //Check for source exclusion files
+  bool data_excl_exists = true;
+  bool bkg_excl_exists = true;
   if(access(data_excl_file.c_str(), F_OK)){
     std::cerr << "No source exclusion file found at "
               << data_excl_file
               << ". This may cause problems."
               << std::endl;
+    data_excl_exists = false;
   }
   if(access(bkg_excl_file.c_str(), F_OK)){
     std::cerr << "No source exclusion file found at "
               << bkg_excl_file
               << ". This may cause problems."
               << std::endl;
+    bkg_excl_exists = false;
   }
   int data_overflow = 0, bkg_overflow = 0;
   typedef struct SourceCut
@@ -512,7 +516,7 @@ void loadData_vegas(indices_t ins, args_t args, double* alpha){
       fail_src_cuts = it.InsideExclRadius(eventCoord);
       if(fail_src_cuts) break;
     }
-    if(fail_src_cuts){
+    if(fail_src_cuts && data_excl_exists){
       data_cuts.src++;
       continue;
     }
@@ -607,7 +611,7 @@ void loadData_vegas(indices_t ins, args_t args, double* alpha){
       fail_src_cuts = it.InsideExclRadius(eventCoord);
       if(fail_src_cuts) break;
     }
-    if(fail_src_cuts){
+    if(fail_src_cuts && bkg_excl_exists){
       bkg_cuts.src++;
       continue;
     }
