@@ -1069,8 +1069,8 @@ void fit(indices_t ins, args_t args, double alpha){
   double lnL_src_nobb = -src_noBB(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1), output_bins);
   double lnL_nosrc_bb = -nosrc_BB(fit_nosrc_bb->GetParameter(0), output_bins);
   double lnL_src_bb = -src_BB(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), output_bins);
-  double TS_nobb = -2 * (lnL_src_nobb - lnL_nosrc_nobb);
-  double TS_bb = -2 * (lnL_src_bb - lnL_nosrc_bb);
+  double TS_nobb = 2 * (lnL_src_nobb - lnL_nosrc_nobb);
+  double TS_bb = 2 * (lnL_src_bb - lnL_nosrc_bb);
   double lima_nobb = lima_sig(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1));
   double lima_bb = lima_sig(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1));
 
