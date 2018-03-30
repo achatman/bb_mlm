@@ -51,7 +51,7 @@ double EBINS[] = {316,630,1259,2512,5012};
 int TBINS[] = {3,4};
 double AZBINS[] = {0,45,90,135,180,225,270,315,360};
 double OBINS[] = {0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0};
-enum class Format_t{Toy, Csv, Vegas};
+enum class Format_t{Toy, Csv, Vegas, Sample};
 struct args_t {
   args_t() : format(Format_t::Toy),
              hist(0),
@@ -708,6 +708,31 @@ void loadData_vegas(indices_t ins, args_t args, double* alpha){
   *alpha = 1.0;
 }
 
+void loadData_sample(indices_t ins, args_t args, double* alpha){
+    /*Load sample data that is easily and quickly repeatable for testing purposes.
+     * Data hist is filled from the function 2x with 3000 counts.
+     * Bkg hist is filled from the function 2x with 5000 counts.
+     * Src hist is filled from a Gaussian with 30000 counts.
+     */
+
+    TH1::SetDefaultSumw2();
+    DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
+    BKG_HIST = new TH1F("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
+    SRC_HIST = new TH1F("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
+
+    for(int i = 0; i < 3000; i++){
+        DAT_HIST->Fill(gRandom->Uniform(MSWLOW, MSWHIGH));
+    }
+    for(int i = 0; i < 5000; i++){
+        BKG_HIST->Fill(gRandom->Uniform(MSWLOW, MSWHIGH));
+    }
+    //double mean = (MSWHIGH + MSWLOW)/2;
+    for(int i = 0; i < 30000; i++){
+        SRC_HIST->Fill(gRandom->Gaus(0, .1));
+    }
+    *alpha = 3/5;
+}
+
 double nosrc_noBB(double Pb, bool print = false, TH1F* F = 0){
   int i;
   double pb;
@@ -1137,7 +1162,7 @@ void fit(indices_t ins, args_t args, double alpha){
 }
 
 int main(int argc, char* argv[]){
-  static void (*loaddata[])(indices_t ins, args_t args, double* alpha) = {loadData, loadData_csv, loadData_vegas};
+  static void (*loaddata[])(indices_t ins, args_t args, double* alpha) = {loadData, loadData_csv, loadData_vegas, loadData_sample};
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return 0;
 
@@ -1213,7 +1238,7 @@ int parse_command_line(int argc, char* argv[], args_t* args){
     if(!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
       std::cout << "OPTIONS:" << std::endl
                 << "  -d FORMAT, --data-format FORMAT" << std::endl
-                << "    Format of the imput data. Available: toy, csv, vegas. Default: toy." << std::endl
+                << "    Format of the imput data. Available: toy, csv, vegas, sample. Default: toy." << std::endl
                 << "  -h, --help" << std::endl
                 << "    Print this message." << std::endl
                 << "  -hist DATA, --histogram DATA" << std::endl
@@ -1237,6 +1262,9 @@ int parse_command_line(int argc, char* argv[], args_t* args){
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "vegas")){
         args->format = Format_t::Vegas;
+      }
+      if(i < argc - 1 && !strcmp(argv[i+1], "sample")){
+        args->format = Format_t::Sample;
       }
     }
     if(!strcmp(argv[i], "-hist") || !strcmp(argv[i], "--histogram")){
