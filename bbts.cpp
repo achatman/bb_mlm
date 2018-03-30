@@ -710,8 +710,8 @@ void loadData_vegas(indices_t ins, args_t args, double* alpha){
 
 void loadData_sample(indices_t ins, args_t args, double* alpha){
     /*Load sample data that is easily and quickly repeatable for testing purposes.
-     * Data hist is filled from the function 2x with 3000 counts.
-     * Bkg hist is filled from the function 2x with 5000 counts.
+     * Data hist is filled from the function 5x with ~1000 counts.
+     * Bkg hist is filled from the function 5x with ~3000 counts.
      * Src hist is filled from a Gaussian with 30000 counts.
      */
 
@@ -720,15 +720,15 @@ void loadData_sample(indices_t ins, args_t args, double* alpha){
     BKG_HIST = new TH1F("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
     SRC_HIST = new TH1F("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
 
-    for(int i = 0; i < 3000; i++){
-        DAT_HIST->Fill(gRandom->Uniform(MSWLOW, MSWHIGH));
-    }
-    for(int i = 0; i < 5000; i++){
-        BKG_HIST->Fill(gRandom->Uniform(MSWLOW, MSWHIGH));
+    for(int i = 1; i <= NBIN; i++){
+        double dat = 5*i + 1000/NBIN + gRandom->Gaus(0, 10);
+        double bkg = 5*i + 3000/NBIN + gRandom->Gaus(0, 10);
+        DAT_HIST->SetBinContent(i, dat);
+        BKG_HIST->SetBinContent(i, bkg);
     }
     //double mean = (MSWHIGH + MSWLOW)/2;
     for(int i = 0; i < 30000; i++){
-        SRC_HIST->Fill(gRandom->Gaus(0, .1));
+        SRC_HIST->Fill(gRandom->Gaus(1, .1));
     }
     *alpha = 3/5;
 }
