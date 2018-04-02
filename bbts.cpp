@@ -3,10 +3,16 @@
 
 std::string OUTPATH;
 
-//Histograms
 TH1F* DAT_HIST;
 TH1F* BKG_HIST;
 TH1F* SRC_HIST;
+
+//Bin boundaries
+double ZABINS[] = {25.46,32.59,37.57,42.56,47.55};
+double EBINS[] = {316,630,1259,2512,5012};
+int TBINS[] = {3,4};
+double AZBINS[] = {0,45,90,135,180,225,270,315,360};
+double OBINS[] = {0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0};
 
 
 //extra function declarations
@@ -465,7 +471,6 @@ void fit(indices_t ins, args_t args, double alpha){
 }
 
 int main(int argc, char* argv[]){
-  static TH1F** (*loaddata[])(indices_t ins, args_t args, double* alpha) = {loadData, loadData_csv, loadData_vegas, loadData_sample};
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return 0;
 
@@ -519,10 +524,8 @@ int main(int argc, char* argv[]){
             std::cout << path.str() << std::endl;
             OUTPATH = path.str();
             double alpha = 1;
-            TH1F** hists = loaddata[((int)args->format)](indices, *args, &alpha);
-            DAT_HIST = hists[0];
-            BKG_HIST = hists[1];
-            SRC_HIST = hists[2];
+            loadData(indices, *args, &alpha);
+
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
             fit(indices, *args, alpha);
             if(args->output & 2) printRawData();

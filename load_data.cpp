@@ -3,9 +3,8 @@
 std::string data_excl_file = "data_src.txt";
 std::string bkg_excl_file = "bkg_src.txt";
 
-TH1F* loadsrc_csv(indices_t ins, args_t args){
+void loadsrc_csv(indices_t ins, args_t args){
   std::cout << "Loading Source" << std::endl;
-  TH1F* SRC_HIST =  new TH1F("SrcHist" , "SRC" , NBIN, MSWLOW, MSWHIGH);
   timestamp;
   std::ifstream srcif("src.list");
   std::string srcstr;
@@ -41,18 +40,15 @@ TH1F* loadsrc_csv(indices_t ins, args_t args){
   srcdatin.close();
   std::cout << SRC_HIST->Integral()
   << " events loaded for source." << std::endl;
-  return SRC_HIST;
+
+  if(args.output & 8) print_cuts("src", 0);
 }
 
-TH1F** loadData(indices_t ins, args_t args, double* alpha){
+void loadData_toy(indices_t ins, args_t args, double* alpha){
   std::string line;
   TFile *f;
   std::ifstream data_flist("data.list");
   std::ifstream bkg_flist("bkg.list");
-
-  TH1::SetDefaultSumw2();
-  TH1F* DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
-  TH1F* BKG_HIST = new TH1F("BkgHist" , "BKG" , NBIN, MSWLOW, MSWHIGH);
 
   //Check each point against cuts
   cuts_t data_cuts;
@@ -244,21 +240,16 @@ TH1F** loadData(indices_t ins, args_t args, double* alpha){
   std::cout << bkg_cuts.msw << " failed msw cut." << std::endl;
   std::cout << bkg_cuts.az << " failed az cut." << std::endl;
   std::cout << bkg_cuts.off << " failed off cut." << std::endl;
-
-  //Construct Source histogram
-  TH1F* SRC_HIST = loadsrc_csv(ins, args);
   if(args.output & 8){
     print_cuts("data", &data_cuts);
     print_cuts("bkg", &bkg_cuts);
-    print_cuts("src", 0);
   }
   std::cout << "Data Overflow: " << data_overflow << std::endl;
   std::cout << "Bkg Overflow: " << bkg_overflow << std::endl;
   *alpha = livetime_data / livetime_bkg;
-  TH1F* hists[3] = {DAT_HIST, BKG_HIST, SRC_HIST};
-  return hists;
 }
 
+/*
 TH1F** loadData_csv(indices_t ins, args_t args, double* alpha){
   std::ifstream dataif("data.list");
   std::ifstream bkgif("bkg.list");
@@ -320,8 +311,9 @@ TH1F** loadData_csv(indices_t ins, args_t args, double* alpha){
 
   return {DAT_HIST, BKG_HIST, SRC_HIST};
 }
+*/
 
-TH1F** loadData_vegas(indices_t ins, args_t args, double* alpha){
+void loadData_vegas(indices_t ins, args_t args, double* alpha){
   //Check for source exclusion files
   bool data_excl_exists = true;
   bool bkg_excl_exists = true;
@@ -388,11 +380,6 @@ TH1F** loadData_vegas(indices_t ins, args_t args, double* alpha){
   VAShowerData* bkg_shower = new VAShowerData;
   data_chain->SetBranchAddress("S", &data_shower);
   bkg_chain->SetBranchAddress("S", &bkg_shower);
-
-  //Setup histograms
-  TH1::SetDefaultSumw2();
-  TH1F* DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
-  TH1F* BKG_HIST =  new TH1F("BkgHist" , "BKG", NBIN, MSWLOW, MSWHIGH);
 
   cuts_t data_cuts, bkg_cuts;
   timestamp;
@@ -586,13 +573,9 @@ TH1F** loadData_vegas(indices_t ins, args_t args, double* alpha){
   std::cout << bkg_cuts.az << " failed az cut." << std::endl;
   std::cout << bkg_cuts.off << " failed off cut." << std::endl;
 
-  //Construct Source Histogram
-  TH1F* SRC_HIST = loadsrc_csv(ins, args);
-
   if(args.output & 8){
     print_cuts("data", &data_cuts);
     print_cuts("bkg", &bkg_cuts);
-    print_cuts("src", 0);
   }
 
   std::cout << "Data Offset Overflow: " << data_overflow << std::endl;
@@ -600,21 +583,14 @@ TH1F** loadData_vegas(indices_t ins, args_t args, double* alpha){
 
   //TODO
   *alpha = 1.0;
-
-  return {DAT_HIST, BKG_HIST, SRC_HIST};
 }
 
-TH1F** loadData_sample(indices_t ins, args_t args, double* alpha){
+void loadData_sample(indices_t ins, args_t args, double* alpha){
   /*Load sample data that is easily and quickly repeatable for testing purposes.
    * Data hist is filled from the function 5x with ~1000 counts.
    * Bkg hist is filled from the function 5x with ~3000 counts.
-   * Src hist is filled from a Gaussian with 30000 counts.
+   * Src hist is filled from a Gaussian with ~30000 counts.
    */
-
-  TH1::SetDefaultSumw2();
-  TH1F* DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
-  TH1F* BKG_HIST = new TH1F("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
-  TH1F* SRC_HIST = new TH1F("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
 
   for(int i = 1; i <= NBIN; i++){
     double dat = 5*i + 1000/NBIN + gRandom->Gaus(0, 10);
@@ -622,11 +598,35 @@ TH1F** loadData_sample(indices_t ins, args_t args, double* alpha){
     DAT_HIST->SetBinContent(i, dat);
     BKG_HIST->SetBinContent(i, bkg);
   }
-  //double mean = (MSWHIGH + MSWLOW)/2;
   for(int i = 0; i < 30000; i++){
     SRC_HIST->Fill(gRandom->Gaus(1, .1));
   }
   *alpha = 3/5;
+}
 
-  return {DAT_HIST, BKG_HIST, SRC_HIST};
+void loadData(indices_t ins, args_t args, double *alpha){
+  TH1::SetDefaultSumw2();
+  DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
+  BKG_HIST = new TH1F("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
+  SRC_HIST = new TH1F("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
+
+
+  if(args.format == Format_t::Toy){
+    loadData_toy(ins, args, alpha);
+    loadsrc_csv(ins, args);
+    std::cout << "Histograms loaded from Toy format." << std::endl;
+  }
+  else if(args.format == Format_t::Vegas){
+    loadData_vegas(ins, args, alpha);
+    loadsrc_csv(ins, args);
+    std::cout << "Histograms loaded from Vegas format." << std::endl;
+  }
+  else if(args.format == Format_t::Sample){
+    loadData_sample(ins, args, alpha);
+    std::cout << "Histograms loaded from Sample format." << std::endl;
+  }
+  else{
+    std::cerr << "No valid data format specified." << std::endl;
+    throw 999;
+  }
 }

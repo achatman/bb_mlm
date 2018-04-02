@@ -42,12 +42,17 @@
 #define MSWHIGH 1.3
 #define PW 15
 
-//Bin boundaries
-double ZABINS[] = {25.46,32.59,37.57,42.56,47.55};
-double EBINS[] = {316,630,1259,2512,5012};
-int TBINS[] = {3,4};
-double AZBINS[] = {0,45,90,135,180,225,270,315,360};
-double OBINS[] = {0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0};
+extern double ZABINS[];
+extern double EBINS[];
+extern int TBINS[];
+extern double AZBINS[];
+extern double OBINS[];
+
+//Histograms
+extern TH1F* DAT_HIST;
+extern TH1F* BKG_HIST;
+extern TH1F* SRC_HIST;
+
 enum class Format_t{Toy, Csv, Vegas, Sample};
 struct args_t {
   args_t() : format(Format_t::Toy),
@@ -85,7 +90,7 @@ struct cuts_t{
 };
 
 
-
+void print_cuts(std::string action, cuts_t* cuts);
 
 
 
