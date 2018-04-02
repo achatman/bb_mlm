@@ -5,7 +5,7 @@ clean:
 	rm -rf bbts BIN* raw_data* fitstats* error* summary.csv HIST* cuts* BB_Likelihood* Std_Likelihood*
 
 clobber: clean
-	rm -rf slurm*
+	rm -rf slurm* *.o
 
 load_data:
 	$$(root-config --cxx --cflags --libs) -I$$VEGAS/resultsExtractor/include -I$$VEGAS/common/include -I$$VEGAS/showerReconstruction2/include -I$$VEGAS/coordinates/include -I$$VEGAS/eventSelection/include -D_OAWG -lMinuit -lTreePlayer -Wall -Werror load_data.cpp -c

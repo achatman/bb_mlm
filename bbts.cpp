@@ -393,7 +393,9 @@ void fit(indices_t ins, args_t args, double alpha){
     double fracs[] = {fit_src_nobb->GetParameter(0),
                       fit_src_nobb->GetParameter(1),
                       fit_src_bb->GetParameter(0),
-                      fit_src_bb->GetParameter(1)};
+                      fit_src_bb->GetParameter(1),
+                      fit_nosrc_nobb->GetParameter(0),
+                      fit_nosrc_bb->GetParameter(0)};
     histogram_fit_data(fracs , ins);
   }
 
@@ -713,7 +715,7 @@ void histogram_raw_data(indices_t ins){
   delete legend;
 }
 
-void histogram_fit_data(double fracs[4], indices_t ins){
+void histogram_fit_data(double fracs[6], indices_t ins){
   if(!(DAT_HIST->Integral() + BKG_HIST->Integral())) return;
   std::stringstream filepath;
   filepath << "HIST_FIT_" << OUTPATH << ".png";
@@ -801,6 +803,34 @@ void histogram_fit_data(double fracs[4], indices_t ins){
   TH1F* res = new TH1F("Residual", "Residual", NBIN, MSWLOW, MSWHIGH);
   res->Add(F0, F1, 1, -1);
   res->Draw("");
+
+  //Write Data
+  c1->cd(4);
+  TPaveText *pt = new TPaveText(0, 0, 1, 1);
+  std::stringstream line;
+  pt->AddText("Standard Fit Values:");
+  line << "P_b = " << fracs[0];
+  pt->AddText(line.str().c_str());
+  line.str("");
+  line << "P_s = " << fracs[1];
+  pt->AddText(line.str().c_str());
+  line.str("");
+  line << "TS = " << -2 * (src_noBB(fracs[0], fracs[1]) - nosrc_noBB(fracs[4]));
+  pt->AddText(line.str().c_str());
+  pt->AddLine(0, .5, 1, .5);
+  pt->AddText("Barlow-Beeston Fit Values:");
+  line.str("");
+  line << "P_b = " << fracs[2];
+  pt->AddText(line.str().c_str());
+  line.str("");
+  line << "P_s = " << fracs[3];
+  pt->AddText(line.str().c_str());
+  line.str("");
+  line << "TS = " << -2 * (src_BB(fracs[2], fracs[3]) - nosrc_BB(fracs[5]));
+  pt->SetAllWith("=", "size", -.5);
+
+  pt->GetLineWith("Standard")->Print();
+  pt->Draw();
 
   //Save and Clean up
   c1->SaveAs(filepath.str().c_str());

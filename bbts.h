@@ -14,6 +14,7 @@
 #include "TTreeReader.h"
 #include "TCut.h"
 #include "TChain.h"
+#include "TPaveText.h"
 //VEGAS Includes
 #include "VASkyMap.h"
 #include "VSOptions.hpp"
