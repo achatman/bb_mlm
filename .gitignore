@@ -1,1 +1,8 @@
+#Compiled Files:
 *.o
+bbts
+
+#Input/Output Files:
+*.txt
+*.png
+*.csv

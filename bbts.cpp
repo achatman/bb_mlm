@@ -675,41 +675,33 @@ void histogram_raw_data(indices_t ins){
   //Copy the global histograms so that we can edit them
   TH1F* dathist = new TH1F(*DAT_HIST);
   TH1F* bkghist = new TH1F(*BKG_HIST);
-  TH1F* srchist = new TH1F(*SRC_HIST);
 
   //Set up
   TCanvas *c1 = new TCanvas("","",1200,1200);
   c1->cd();
   dathist->SetLineColor(4);
   bkghist->SetLineColor(6);
-  srchist->SetLineColor(1);
 
   dathist->SetStats(false);
   bkghist->SetStats(false);
-  srchist->SetStats(false);
 
   dathist->SetTitle(OUTPATH.c_str());
 
   bkghist->Scale(DAT_HIST->Integral() / BKG_HIST->Integral());
-  srchist->Scale(DAT_HIST->Integral() / SRC_HIST->Integral());
 
   TLegend *legend;
   legend = new TLegend(0.12, 0.8, 0.3, 0.9);
   legend->AddEntry(dathist, "Data");
   legend->AddEntry(bkghist, "Background Template");
-  legend->AddEntry(srchist, "Source Template");
 
   dathist->SetMinimum(0);
-  dathist->SetMaximum(std::max(dathist->GetMaximum(),
-                      std::max(bkghist->GetMaximum(),
-                               srchist->GetMaximum())) * 1.1);
+  dathist->SetMaximum(std::max(dathist->GetMaximum(), bkghist->GetMaximum()) * 1.1);
 
   //Draw
   dathist->Draw();
   dathist->Draw("sameE0");
   bkghist->Draw("same");
   bkghist->Draw("sameE0");
-  srchist->Draw("same hist");
   legend->Draw();
 
   //Save and clean up
@@ -718,7 +710,6 @@ void histogram_raw_data(indices_t ins){
   delete c1;
   delete dathist;
   delete bkghist;
-  delete srchist;
   delete legend;
 }
 
