@@ -808,28 +808,27 @@ void histogram_fit_data(double fracs[6], indices_t ins){
   c1->cd(4);
   TPaveText *pt = new TPaveText(0, 0, 1, 1);
   std::stringstream line;
-  pt->AddText("Standard Fit Values:");
+  pt->AddText(.5, .95, "Standard Fit Values:");
   line << "P_b = " << fracs[0];
-  pt->AddText(line.str().c_str());
+  pt->AddText(.25, .8, line.str().c_str());
   line.str("");
   line << "P_s = " << fracs[1];
-  pt->AddText(line.str().c_str());
+  pt->AddText(.75, .8, line.str().c_str());
   line.str("");
   line << "TS = " << -2 * (src_noBB(fracs[0], fracs[1]) - nosrc_noBB(fracs[4]));
-  pt->AddText(line.str().c_str());
+  pt->AddText(.5, .7, line.str().c_str());
   pt->AddLine(0, .5, 1, .5);
-  pt->AddText("Barlow-Beeston Fit Values:");
+  pt->AddText(.5, .45, "Barlow-Beeston Fit Values:");
   line.str("");
   line << "P_b = " << fracs[2];
-  pt->AddText(line.str().c_str());
+  pt->AddText(.25, .3, line.str().c_str());
   line.str("");
   line << "P_s = " << fracs[3];
-  pt->AddText(line.str().c_str());
+  pt->AddText(.75, .3, line.str().c_str());
   line.str("");
   line << "TS = " << -2 * (src_BB(fracs[2], fracs[3]) - nosrc_BB(fracs[5]));
-  pt->SetAllWith("=", "size", -.5);
-
-  pt->GetLineWith("Standard")->Print();
+  pt->AddText(.5, .2, line.str().c_str());
+  pt->SetAllWith("=", "size", .05);
   pt->Draw();
 
   //Save and Clean up
