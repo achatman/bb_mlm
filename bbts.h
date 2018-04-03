@@ -50,10 +50,11 @@ extern double AZBINS[];
 extern double OBINS[];
 
 //Histograms
+/*
 extern TH1F* DAT_HIST;
 extern TH1F* BKG_HIST;
 extern TH1F* SRC_HIST;
-
+*/
 enum class Format_t{Toy, Csv, Vegas, Sample};
 struct args_t {
   args_t() : format(Format_t::Toy),

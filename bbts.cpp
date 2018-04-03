@@ -526,7 +526,11 @@ int main(int argc, char* argv[]){
             std::cout << path.str() << std::endl;
             OUTPATH = path.str();
             double alpha = 1;
-            loadData(indices, *args, &alpha);
+            TH1::SetDefaultSumw2();
+            DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
+            BKG_HIST = new TH1F("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
+            SRC_HIST = new TH1F("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
+            loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST);
 
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
             fit(indices, *args, alpha);
