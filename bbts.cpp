@@ -804,9 +804,8 @@ void histogram_fit_data(double fracs[6], indices_t ins){
 
   //Draw Residual
   c1->cd(3);
-  TH1F* res = new TH1F("Residual", "Residual", NBIN, MSWLOW, MSWHIGH);
-  res->Add(F0, F1, 1, -1);
-  res->Draw("");
+  TRatioPlot* rp = new TRatioPlot(F1, DAT_HIST, "diff");
+  rp->Draw();
 
   //Write Data
   c1->cd(4);
@@ -845,7 +844,6 @@ void histogram_fit_data(double fracs[6], indices_t ins){
   delete F0;
   delete F1;
   delete B1;
-  delete res;
   delete legend0;
   delete legend1;
 }

@@ -15,6 +15,7 @@
 #include "TCut.h"
 #include "TChain.h"
 #include "TPaveText.h"
+#include "TRatioPlot.h"
 //VEGAS Includes
 #include "VASkyMap.h"
 #include "VSOptions.hpp"
