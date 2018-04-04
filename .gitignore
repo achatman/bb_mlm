@@ -6,3 +6,4 @@ bbts
 *.txt
 *.png
 *.csv
+*.slurm
