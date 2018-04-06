@@ -354,7 +354,7 @@ void wrapper_nosrc_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t pa
 
 void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1]); }
 
-void fit(indices_t ins, args_t args, double alpha, double fracs*){
+void fit(indices_t ins, args_t args, double alpha, double *fracs = 0){
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
   TFitter* fit_src_nobb   = new TFitter(2);
@@ -389,12 +389,14 @@ void fit(indices_t ins, args_t args, double alpha, double fracs*){
   fit_nosrc_bb  ->ExecuteCommand("MIGRAD", 0, 0);
   fit_src_bb    ->ExecuteCommand("MIGRAD", 0, 0);
 
-  fracs[] = {fit_src_nobb->GetParameter(0),
-             fit_src_nobb->GetParameter(1),
-             fit_src_bb->GetParameter(0),
-             fit_src_bb->GetParameter(1),
-             fit_nosrc_nobb->GetParameter(0),
-             fit_nosrc_bb->GetParameter(0)};
+  if(fracs){
+    fracs[] = {fit_src_nobb->GetParameter(0),
+              fit_src_nobb->GetParameter(1),
+              fit_src_bb->GetParameter(0),
+              fit_src_bb->GetParameter(1),
+              fit_nosrc_nobb->GetParameter(0),
+              fit_nosrc_bb->GetParameter(0)};
+  }
 
   //Get likelihood and TS
   bool output_bins = (args.output & 1) && (DAT_HIST->Integral() + BKG_HIST->Integral());
@@ -471,7 +473,7 @@ void fit(indices_t ins, args_t args, double alpha, double fracs*){
 
 void run(int argc, char* argv[]){
   args_t* args = new args_t;
-  if(parse_command_line(argc, argv, args)) return 0;
+  if(parse_command_line(argc, argv, args)) return;
 
   //Setup output files
   std::ofstream f1("fitstats_bb.csv");
@@ -535,7 +537,7 @@ void run(int argc, char* argv[]){
             fit(indices, *args, alpha, fracs);
             if(args->output & 2) printRawData();
             if(args->hist & 1) histogram_raw_data(indices);
-            if(args->hist & 2) histogram_fit_data(fracs, ins);
+            if(args->hist & 2) histogram_fit_data(fracs, indices);
           }
         }
       }
@@ -546,15 +548,15 @@ void run(int argc, char* argv[]){
 
 void bidirectional(int argc, char* argv[]){
   args_t* args = new args_t;
-  if(parse_command_line(argc, argv, args)) return 0;
+  if(parse_command_line(argc, argv, args)) return;
 
-  int zi = 1; ei = 0; ti = 0; ai = 0; oi = 0;
+  int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0;
   indices_t indices;
   for(indices.za = zi; indices.za < 2; indices.za++){
     for(indices.e = ei; indices.e < 4; indices.e++){
       for(indices.tel = ti; indices.tel < 2; indices.tel++){
         for(indices.az = ai; indices.az < 8; indices.az++){
-          for indices.off = oi; indices.off < 8; indices.off++){
+          for(indices.off = oi; indices.off < 8; indices.off++){
             std::stringstream path;
             if(!(args->bin_vars & 1)){
               if(indices.za != zi) continue;
@@ -588,14 +590,14 @@ void bidirectional(int argc, char* argv[]){
             loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST);
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
             double fracs_for[6];
-            fit(indices, args, alpha, fracs_for);
-            TH1F* dat_hist = new TH1F*(DAT_HIST);
-            TH1F* bkg_hist = new TH1F*(BKG_HIST);
+            fit(indices, *args, alpha, fracs_for);
+            TH1F* dat_hist = new TH1F(DAT_HIST);
+            TH1F* bkg_hist = new TH1F(BKG_HIST);
             TH1F* temp = DAT_HIST;
             DAT_HIST = BKG_HIST;
-            BKG_HIST = DAT_HIST;
+            BKG_HIST = temp;
             double fracs_back[6];
-            fit(indices, args, alpha, fracs_back);
+            fit(indices, *args, alpha, fracs_back);
             delete SRC_HIST;
 
             TCanvas *c1 = new TCanvas("",OUTPATH.c_str(),1600,1600);
@@ -637,13 +639,13 @@ void bidirectional(int argc, char* argv[]){
             title << OUTPATH << " " << "Fit Forward";
             dat_fit_forward->SetTitle(title.str().c_str());
             title.str("");
-            src_bb(fracs_for[0], fracs_for[1], false, dat_fit_forward, bkg_fit_forward);
+            src_BB(fracs_for[0], fracs_for[1], false, dat_fit_forward, bkg_fit_forward);
             bkg_fit_forward->Scale(dat_fit_forward->Integral() / bkg_fit_forward->Integral());
             legend = new TLegend(0.12, 0.8, 0.3, 0.9);
             legend->AddEntry(dat_fit_forward, "Fit Data");
             legend->AddEntry(bkg_fit_forward, "Fit Bkg");
             dat_fit_forward->SetMinimum(0);
-            dat_fit_forward->SetMaximum(std::max(dat_fit_forward->GetMaximum(), bkg_fit-forward->GetMaximum())*1.1);
+            dat_fit_forward->SetMaximum(std::max(dat_fit_forward->GetMaximum(), bkg_fit_forward->GetMaximum())*1.1);
             dat_fit_forward->Draw();
             dat_fit_forward->Draw("sameE0");
             bkg_fit_forward->Draw("same");
@@ -663,11 +665,11 @@ void bidirectional(int argc, char* argv[]){
             DAT_HIST->SetTitle(title.str().c_str());
             title.str("");
             BKG_HIST->Scale(DAT_HIST->Integral() / BKG_HIST->Integral());
-            TLegend *legend = new TLegend(0.12, 0.8, 0.3, 0.9);
+            legend = new TLegend(0.12, 0.8, 0.3, 0.9);
             legend->AddEntry(DAT_HIST, "Raw Data");
             legend->AddEntry(BKG_HIST, "Raw Bkg");
             DAT_HIST->SetMinimum(0);
-            DAT_HIST->SetMaximum(std::max(DAT_HIST->GetMAximum(), BKG_HIST->GetMaximum())*1.1);
+            DAT_HIST->SetMaximum(std::max(DAT_HIST->GetMaximum(), BKG_HIST->GetMaximum())*1.1);
             DAT_HIST->Draw();
             DAT_HIST->Draw("sameE0");
             BKG_HIST->Draw("same");
@@ -706,7 +708,7 @@ void bidirectional(int argc, char* argv[]){
 
 
             //Save
-            title << OUTPATH << " Bidirectional.png"
+            title << OUTPATH << " Bidirectional.png";
             c1->SaveAs(title.str().c_str());
             c1->Clear();
             delete c1;
