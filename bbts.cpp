@@ -585,7 +585,7 @@ void bidirectional(int argc, char* argv[]){
             }
             else path << "O" << indices.off;
 
-            //Run Fit
+            //Run Forward Fit
             std::cout << path.str() << std::endl;
             OUTPATH = path.str();
             double alpha = 1;
@@ -597,21 +597,16 @@ void bidirectional(int argc, char* argv[]){
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
             double fracs_for[6];
             fit(indices, *args, alpha, fracs_for);
-            TH1F* dat_hist = new TH1F(*DAT_HIST);
-            TH1F* bkg_hist = new TH1F(*BKG_HIST);
-            TH1F* temp = DAT_HIST;
-            DAT_HIST = BKG_HIST;
-            BKG_HIST = temp;
-            double fracs_back[6];
-            fit(indices, *args, alpha, fracs_back);
-            delete SRC_HIST;
 
+            //Plot Forwards
             TCanvas *c1 = new TCanvas("",OUTPATH.c_str(),1600,1600);
             c1->Divide(3,2);
             std::stringstream title;
 
             //Plot Forward Raw
             c1->cd(1);
+            TH1F* dat_hist = new TH1F(*DAT_HIST);
+            TH1F* bkg_hist = new TH1F(*BKG_HIST);
             dat_hist->SetLineColor(4);
             bkg_hist->SetLineColor(6);
             dat_hist->SetStats(false);
@@ -620,19 +615,16 @@ void bidirectional(int argc, char* argv[]){
             dat_hist->SetTitle(title.str().c_str());
             title.str("");
             bkg_hist->Scale(dat_hist->Integral() / bkg_hist->Integral());
-            TLegend *legend = new TLegend(0.12, 0.8, 0.3, 0.9);
-            legend->AddEntry(dat_hist, "Raw Data");
-            legend->AddEntry(bkg_hist, "Raw Bkg");
+            TLegend *legend1 = new TLegend(0.12, 0.8, 0.3, 0.9);
+            legend1->AddEntry(dat_hist, "Raw Data");
+            legend1->AddEntry(bkg_hist, "Raw Bkg");
             dat_hist->SetMinimum(0);
             dat_hist->SetMaximum(std::max(dat_hist->GetMaximum(), bkg_hist->GetMaximum())*1.1);
             dat_hist->Draw();
             dat_hist->Draw("sameE0");
             bkg_hist->Draw("same");
             bkg_hist->Draw("sameE0");
-            legend->Draw();
-            delete legend;
-            delete dat_hist;
-            delete bkg_hist;
+            legend1->Draw();
 
             //Plot Forward Fit
             c1->cd(2);
@@ -647,19 +639,24 @@ void bidirectional(int argc, char* argv[]){
             title.str("");
             src_BB(fracs_for[0], fracs_for[1], false, dat_fit_forward, bkg_fit_forward);
             bkg_fit_forward->Scale(dat_fit_forward->Integral() / bkg_fit_forward->Integral());
-            legend = new TLegend(0.12, 0.8, 0.3, 0.9);
-            legend->AddEntry(dat_fit_forward, "Fit Data");
-            legend->AddEntry(bkg_fit_forward, "Fit Bkg");
+            TLegend *legend2 = new TLegend(0.12, 0.8, 0.3, 0.9);
+            legend2->AddEntry(dat_fit_forward, "Fit Data");
+            legend2->AddEntry(bkg_fit_forward, "Fit Bkg");
             dat_fit_forward->SetMinimum(0);
             dat_fit_forward->SetMaximum(std::max(dat_fit_forward->GetMaximum(), bkg_fit_forward->GetMaximum())*1.1);
             dat_fit_forward->Draw();
             dat_fit_forward->Draw("sameE0");
             bkg_fit_forward->Draw("same");
             bkg_fit_forward->Draw("sameE0");
-            legend->Draw();
-            delete legend;
-            delete dat_fit_forward;
-            delete bkg_fit_forward;
+            legend2->Draw();
+
+
+            //Run Backward Fit
+            TH1F* temp = DAT_HIST;
+            DAT_HIST = BKG_HIST;
+            BKG_HIST = temp;
+            double fracs_back[6];
+            fit(indices, *args, alpha, fracs_back);
 
             //Plot Backwards Raw
             c1->cd(4);
@@ -671,19 +668,16 @@ void bidirectional(int argc, char* argv[]){
             DAT_HIST->SetTitle(title.str().c_str());
             title.str("");
             BKG_HIST->Scale(DAT_HIST->Integral() / BKG_HIST->Integral());
-            legend = new TLegend(0.12, 0.8, 0.3, 0.9);
-            legend->AddEntry(DAT_HIST, "Raw Data");
-            legend->AddEntry(BKG_HIST, "Raw Bkg");
+            TLegend *legend3 = new TLegend(0.12, 0.8, 0.3, 0.9);
+            legend3->AddEntry(DAT_HIST, "Raw Data");
+            legend3->AddEntry(BKG_HIST, "Raw Bkg");
             DAT_HIST->SetMinimum(0);
             DAT_HIST->SetMaximum(std::max(DAT_HIST->GetMaximum(), BKG_HIST->GetMaximum())*1.1);
             DAT_HIST->Draw();
             DAT_HIST->Draw("sameE0");
             BKG_HIST->Draw("same");
             BKG_HIST->Draw("sameE0");
-            legend->Draw();
-            delete legend;
-            delete DAT_HIST;
-            delete BKG_HIST;
+            legend3->Draw();
 
             //Plot Backward Fit
             c1->cd(5);
@@ -698,19 +692,28 @@ void bidirectional(int argc, char* argv[]){
             title.str("");
             src_BB(fracs_back[0], fracs_back[1], false, dat_fit_back, bkg_fit_back);
             bkg_fit_back->Scale(dat_fit_back->Integral() / bkg_fit_back->Integral());
-            legend = new TLegend(0.12, 0.8, 0.3, 0.9);
-            legend->AddEntry(dat_fit_back, "Fit Data");
-            legend->AddEntry(bkg_fit_back, "Fit Bkg");
+            TLegend *legend4 = new TLegend(0.12, 0.8, 0.3, 0.9);
+            legend4->AddEntry(dat_fit_back, "Fit Data");
+            legend4->AddEntry(bkg_fit_back, "Fit Bkg");
             dat_fit_back->SetMinimum(0);
             dat_fit_back->SetMaximum(std::max(dat_fit_back->GetMaximum(), bkg_fit_back->GetMaximum())*1.1);
             dat_fit_back->Draw();
             dat_fit_back->Draw("sameE0");
             bkg_fit_back->Draw("same");
             bkg_fit_back->Draw("sameE0");
-            legend->Draw();
-            delete legend;
-            delete dat_fit_back;
-            delete bkg_fit_back;
+            legend4->Draw();
+
+            //Plot Raw Comp & Pulls
+            c1->cd(3);
+            DAT_HIST->Scale(dat_hist->Integral() / DAT_HIST->Integral());
+            TRatioPlot* rp_raw = new TRatioPlot(dat_hist, DAT_HIST, "diff");
+            rp_raw->Draw();
+
+            //Plot Fit Comp & Pulls
+            c1->cd(6);
+            dat_fit_back->Scale(dat_fit_forward->Integral() / dat_fit_back->Integral());
+            TRatioPlot* rp_fit = new TRatioPlot(dat_fit_forward, dat_fit_back, "diff");
+            rp_fit->Draw();
 
 
             //Save
@@ -718,6 +721,20 @@ void bidirectional(int argc, char* argv[]){
             c1->SaveAs(title.str().c_str());
             c1->Clear();
             delete c1;
+            delete DAT_HIST;
+            delete BKG_HIST;
+            delete SRC_HIST;
+            delete legend1;
+            delete dat_hist;
+            delete bkg_hist;
+            delete legend2;
+            delete dat_fit_forward;
+            delete bkg_fit_forward;
+            delete legend3;
+            delete legend4;
+            delete dat_fit_back;
+            delete bkg_fit_back;
+
 
 
           }
