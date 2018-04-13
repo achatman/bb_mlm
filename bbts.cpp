@@ -390,12 +390,18 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs = 0){
   fit_src_bb    ->ExecuteCommand("MIGRAD", 0, 0);
 
   if(fracs){
-    fracs[] = {fit_src_nobb->GetParameter(0),
-              fit_src_nobb->GetParameter(1),
-              fit_src_bb->GetParameter(0),
-              fit_src_bb->GetParameter(1),
-              fit_nosrc_nobb->GetParameter(0),
-              fit_nosrc_bb->GetParameter(0)};
+    fracs[0] = fit_src_nobb->GetParameter(0);
+    fracs[1] = fit_src_nobb->GetParameter(1);
+    fracs[2] = fit_src_bb->GetParameter(0);
+    fracs[3] = fit_src_bb->GetParameter(1);
+    fracs[4] = fit_nosrc_nobb->GetParameter(0);
+    fracs[5] = fit_nosrc_bb->GetParameter(0);
+//     fracs = {fit_src_nobb->GetParameter(0),
+//               fit_src_nobb->GetParameter(1),
+//               fit_src_bb->GetParameter(0),
+//               fit_src_bb->GetParameter(1),
+//               fit_nosrc_nobb->GetParameter(0),
+//               fit_nosrc_bb->GetParameter(0)};
   }
 
   //Get likelihood and TS
@@ -591,8 +597,8 @@ void bidirectional(int argc, char* argv[]){
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
             double fracs_for[6];
             fit(indices, *args, alpha, fracs_for);
-            TH1F* dat_hist = new TH1F(DAT_HIST);
-            TH1F* bkg_hist = new TH1F(BKG_HIST);
+            TH1F* dat_hist = new TH1F(*DAT_HIST);
+            TH1F* bkg_hist = new TH1F(*BKG_HIST);
             TH1F* temp = DAT_HIST;
             DAT_HIST = BKG_HIST;
             BKG_HIST = temp;
@@ -690,7 +696,7 @@ void bidirectional(int argc, char* argv[]){
             title << OUTPATH << " " << "Fit Backward";
             dat_fit_back->SetTitle(title.str().c_str());
             title.str("");
-            src_bb(fracs_back[0], fracs_back[1], false, dat_fit_back, bkg_fit_back);
+            src_BB(fracs_back[0], fracs_back[1], false, dat_fit_back, bkg_fit_back);
             bkg_fit_back->Scale(dat_fit_back->Integral() / bkg_fit_back->Integral());
             legend = new TLegend(0.12, 0.8, 0.3, 0.9);
             legend->AddEntry(dat_fit_back, "Fit Data");
