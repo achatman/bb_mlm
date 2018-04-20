@@ -705,36 +705,57 @@ void bidirectional(int argc, char* argv[]){
 
             //Plot Raw Comp & Pulls
             c1->cd(3);
-            DAT_HIST->Scale(dat_hist->Integral() / DAT_HIST->Integral());
-            TRatioPlot* rp_raw = new TRatioPlot(dat_hist, DAT_HIST, "diff");
+            TH1F* dat_copy = new TH1F(*DAT_HIST);
+            dat_hist->SetLineColor(8);
+            dat_copy->SetLineColor(9);
+            dat_hist->SetTitle("Raw Comparison");
+            dat_copy->Scale(dat_hist->Integral() / dat_copy->Integral());
+            TRatioPlot* rp_raw = new TRatioPlot(dat_hist, dat_copy, "diff");
+            rp_raw->SetH1DrawOpt("E0");
+            rp_raw->SetH2DrawOpt("E0");
             rp_raw->Draw();
+            TLegend *legend5 = new TLegend(0.12, 0.8, 0.3, 0.9);
+            legend5->AddEntry(dat_hist, "Sample 1");
+            legend5->AddEntry(dat_copy, "Sample 2");
+            legend5->Draw();
 
             //Plot Fit Comp & Pulls
             c1->cd(6);
-            dat_fit_back->Scale(dat_fit_forward->Integral() / dat_fit_back->Integral());
-            TRatioPlot* rp_fit = new TRatioPlot(dat_fit_forward, dat_fit_back, "diff");
+            TH1F* dat_copy2 = new TH1F(*dat_fit_back);
+            dat_fit_forward->SetLineColor(8);
+            dat_copy2->SetLineColor(9);
+            dat_fit_forward->SetTitle("Fit Comparison");
+            dat_copy2->Scale(dat_fit_forward->Integral() / dat_copy2->Integral());
+            TRatioPlot* rp_fit = new TRatioPlot(dat_fit_forward, dat_copy2, "diff");
+            rp_fit->SetH1DrawOpt("E0");
+            rp_fit->SetH2DrawOpt("E0");
             rp_fit->Draw();
+            TLegend *legend6 = new TLegend(0.12, 0.8, 0.3, 0.9);
+            legend6->AddEntry(dat_fit_forward, "Sample 1");
+            legend6->AddEntry(dat_copy2, "Sample 2");
+            legend6->Draw();
 
 
             //Save
-            title << OUTPATH << " Bidirectional.png";
+            title << "Bidirectional_" << OUTPATH << ".png";
             c1->SaveAs(title.str().c_str());
             c1->Clear();
             delete c1;
             delete DAT_HIST;
             delete BKG_HIST;
             delete SRC_HIST;
-            delete legend1;
             delete dat_hist;
             delete bkg_hist;
-            delete legend2;
             delete dat_fit_forward;
             delete bkg_fit_forward;
-            delete legend3;
-            delete legend4;
             delete dat_fit_back;
             delete bkg_fit_back;
-
+            delete legend1;
+            delete legend2;
+            delete legend3;
+            delete legend4;
+            delete legend5;
+            delete legend6;
 
 
           }
