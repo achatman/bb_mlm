@@ -705,34 +705,36 @@ void bidirectional(int argc, char* argv[]){
 
             //Plot Raw Comp & Pulls
             c1->cd(3);
-            TH1F* dat_copy = new TH1F(*DAT_HIST);
-            dat_hist->SetLineColor(8);
-            dat_copy->SetLineColor(9);
-            dat_hist->SetTitle("Raw Comparison");
-            dat_copy->Scale(dat_hist->Integral() / dat_copy->Integral());
-            TRatioPlot* rp_raw = new TRatioPlot(dat_hist, dat_copy, "diff");
+            TH1F* dat1 = new TH1F(*dat_hist);
+            TH1F* dat2 = new TH1F(*DAT_HIST);
+            dat1->SetLineColor(8);
+            dat2->SetLineColor(9);
+            dat1->SetTitle("Raw Comparison");
+            dat2->Scale(dat1->Integral() / dat2->Integral());
+            TRatioPlot* rp_raw = new TRatioPlot(dat1, dat2, "diff");
             rp_raw->SetH1DrawOpt("E0");
             rp_raw->SetH2DrawOpt("E0");
             rp_raw->Draw();
             TLegend *legend5 = new TLegend(0.12, 0.8, 0.3, 0.9);
-            legend5->AddEntry(dat_hist, "Sample 1");
-            legend5->AddEntry(dat_copy, "Sample 2");
+            legend5->AddEntry(dat1, "Sample 1");
+            legend5->AddEntry(dat2, "Sample 2");
             legend5->Draw();
 
             //Plot Fit Comp & Pulls
             c1->cd(6);
-            TH1F* dat_copy2 = new TH1F(*dat_fit_back);
-            dat_fit_forward->SetLineColor(8);
-            dat_copy2->SetLineColor(9);
-            dat_fit_forward->SetTitle("Fit Comparison");
-            dat_copy2->Scale(dat_fit_forward->Integral() / dat_copy2->Integral());
-            TRatioPlot* rp_fit = new TRatioPlot(dat_fit_forward, dat_copy2, "diff");
+            TH1F* fit1 = new TH1F(*dat_fit_forward);
+            TH1F* fit2 = new TH1F(*dat_fit_back);
+            fit1->SetLineColor(8);
+            fit2->SetLineColor(9);
+            fit1->SetTitle("Fit Comparison");
+            fit2->Scale(fit1->Integral() / fit2->Integral());
+            TRatioPlot* rp_fit = new TRatioPlot(fit1, fit2, "diff");
             rp_fit->SetH1DrawOpt("E0");
             rp_fit->SetH2DrawOpt("E0");
             rp_fit->Draw();
             TLegend *legend6 = new TLegend(0.12, 0.8, 0.3, 0.9);
-            legend6->AddEntry(dat_fit_forward, "Sample 1");
-            legend6->AddEntry(dat_copy2, "Sample 2");
+            legend6->AddEntry(fit1, "Sample 1");
+            legend6->AddEntry(fit2, "Sample 2");
             legend6->Draw();
 
 
@@ -756,6 +758,10 @@ void bidirectional(int argc, char* argv[]){
             delete legend4;
             delete legend5;
             delete legend6;
+            delete dat1;
+            delete dat2;
+            delete fit1;
+            delete fit2;
 
 
           }
