@@ -711,7 +711,8 @@ void bidirectional(int argc, char* argv[]){
             dat2->SetLineColor(9);
             dat1->SetTitle("Raw Comparison");
             dat2->Scale(dat1->Integral() / dat2->Integral());
-            TRatioPlot* rp_raw = new TRatioPlot(dat1, dat2, "diff");
+            std::cout << "POINT_CALL" << std::endl;
+            TRatioPlot_BetterError* rp_raw = new TRatioPlot_BetterError(dat1, dat2, "diffsig");
             rp_raw->SetH1DrawOpt("E0");
             rp_raw->SetH2DrawOpt("E0");
             rp_raw->Draw();
@@ -728,7 +729,7 @@ void bidirectional(int argc, char* argv[]){
             fit2->SetLineColor(9);
             fit1->SetTitle("Fit Comparison");
             fit2->Scale(fit1->Integral() / fit2->Integral());
-            TRatioPlot* rp_fit = new TRatioPlot(fit1, fit2, "diff");
+            TRatioPlot_BetterError* rp_fit = new TRatioPlot_BetterError(fit1, fit2, "diffsig");
             rp_fit->SetH1DrawOpt("E0");
             rp_fit->SetH2DrawOpt("E0");
             rp_fit->Draw();
