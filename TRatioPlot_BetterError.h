@@ -91,8 +91,6 @@ protected:
   /// which options were passed.
   Int_t BuildLowerPlot()
   {
-    std::cout << "POINT_BUILD" << std::endl;
-    std::cout << "Calculation mode: " << fMode << std::endl;
     // Clear and delete the graph if not exists
     if (fRatioGraph != 0) {
       fRatioGraph->IsA()->Destructor(fRatioGraph);
@@ -173,7 +171,6 @@ protected:
 
         } else if (fErrorMode == ErrorMode::kErrorSymmetric) {
           error = TMath::Sqrt( TMath::Power(fH1->GetBinError(i), 2) + TMath::Power(fH2->GetBinError(i), 2) );
-          std::cout << "POINT_ERROR" << std::endl;
         } else {
           Warning("BuildLowerPlot", "error mode is invalid");
           error = 0;
@@ -334,7 +331,6 @@ protected:
 public:
   TRatioPlot_BetterError(TH1* h1, TH1* h2, Option_t *option)
   {
-    std::cout << "POINT_CREATE" << std::endl;
     gROOT->GetListOfCleanups()->Add(this);
 
     if (!h1 || !h2) {
