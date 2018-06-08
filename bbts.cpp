@@ -493,7 +493,12 @@ void run(int argc, char* argv[]){
             DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
             BKG_HIST = new TH1F("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
             SRC_HIST = new TH1F("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
-            loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST);
+            TH2F* dat_2hist, bkg_2hist;
+            if(args->graphics & 4){
+              TH2F* dat_2hist = new TH2F("Data_MSWvsMSL", "Data MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              TH2F* bkg_2hist = new TH2F("Bkg_MSWvsMSL", "Bkg MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+            }
+            loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST, dat_2hist, bkg_2hist);
 
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
             double fracs[6];
@@ -785,7 +790,7 @@ OPTIONS:
 
   -g GRAPHICS, --graphics GRAPHICS
     Triggers output of graphics files.
-    Available: none, stdlnL, bblnL, all.
+    Available: none, stdlnL, bblnL, mswmsl, all.
     Default: none.
 
   -h, --help
@@ -894,8 +899,11 @@ OPTIONS:
       if(i < argc - 1 && !strcmp(argv[i+1], "bblnL") && !(args->graphics & 2)){
         args->graphics += 2;
       }
+      if(i < argc - 1 && !strcmp(argv[i+1], "mswmsl") && !(args->graphics & 4)){
+        args->graphics += 4;
+      }
       if(i < argc - 1 && !strcmp(argv[i+1], "all")){
-        args->graphics = 3;
+        args->graphics = 7;
       }
     }
     if(!strcmp(argv[i], "-op") || !strcmp(argv[i], "--op-info")){
@@ -1347,4 +1355,18 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
   //clean up
   delete c1;
   delete map;
+}
+
+void plot_msw_vs_msl(TH2F* dat_2hist, TH2F* bkg_2hist){
+  dat_2hist->GetXaxis()->SetTitle("MSW");
+  dat_2hist->GetYaxis()->SetTitle("MSL");
+  bkg_2hist->GetXaxis()->SetTitle("MSW");
+  bkg_2hist->GetYaxis()->SetTitle("MSL");
+
+
+
+
+  TCanvas c1("c1", "c1", 1600, 1600);
+  c1.Divide(2,1);
+  c1->cd(1);
 }
