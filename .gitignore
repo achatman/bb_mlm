@@ -3,6 +3,7 @@
 bbts
 
 #Input/Output Files:
+*.list
 *.txt
 *.png
 *.csv

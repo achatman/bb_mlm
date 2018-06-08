@@ -396,12 +396,6 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs = 0){
     fracs[3] = fit_src_bb->GetParameter(1);
     fracs[4] = fit_nosrc_nobb->GetParameter(0);
     fracs[5] = fit_nosrc_bb->GetParameter(0);
-//     fracs = {fit_src_nobb->GetParameter(0),
-//               fit_src_nobb->GetParameter(1),
-//               fit_src_bb->GetParameter(0),
-//               fit_src_bb->GetParameter(1),
-//               fit_nosrc_nobb->GetParameter(0),
-//               fit_nosrc_bb->GetParameter(0)};
   }
 
   //Get likelihood and TS
@@ -599,35 +593,13 @@ void bidirectional(int argc, char* argv[]){
             fit(indices, *args, alpha, fracs_for);
 
             //Plot Forwards
+            gStyle->SetOptStat(0);
             TCanvas *c1 = new TCanvas("",OUTPATH.c_str(),1600,1600);
             c1->Divide(3,2);
             std::stringstream title;
 
-            //Plot Forward Raw
-            c1->cd(1);
-            TH1F* dat_hist = new TH1F(*DAT_HIST);
-            TH1F* bkg_hist = new TH1F(*BKG_HIST);
-            dat_hist->SetLineColor(4);
-            bkg_hist->SetLineColor(6);
-            dat_hist->SetStats(false);
-            bkg_hist->SetStats(false);
-            title << OUTPATH << " " << "Raw Forward";
-            dat_hist->SetTitle(title.str().c_str());
-            title.str("");
-            bkg_hist->Scale(dat_hist->Integral() / bkg_hist->Integral());
-            TLegend *legend1 = new TLegend(0.12, 0.8, 0.3, 0.9);
-            legend1->AddEntry(dat_hist, "Raw Data");
-            legend1->AddEntry(bkg_hist, "Raw Bkg");
-            dat_hist->SetMinimum(0);
-            dat_hist->SetMaximum(std::max(dat_hist->GetMaximum(), bkg_hist->GetMaximum())*1.1);
-            dat_hist->Draw();
-            dat_hist->Draw("sameE0");
-            bkg_hist->Draw("same");
-            bkg_hist->Draw("sameE0");
-            legend1->Draw();
-
             //Plot Forward Fit
-            c1->cd(2);
+            c1->cd(1);
             TH1F* dat_fit_forward = new TH1F("DFit_For", "Forward", NBIN, MSWLOW, MSWHIGH);
             TH1F* bkg_fit_forward = new TH1F("BFit_For", "Forward", NBIN, MSWLOW, MSWHIGH);
             dat_fit_forward->SetLineColor(4);
@@ -637,7 +609,7 @@ void bidirectional(int argc, char* argv[]){
             title << OUTPATH << " " << "Fit Forward";
             dat_fit_forward->SetTitle(title.str().c_str());
             title.str("");
-            src_BB(fracs_for[0], fracs_for[1], false, dat_fit_forward, bkg_fit_forward);
+            src_BB(fracs_for[2], fracs_for[3], false, dat_fit_forward, bkg_fit_forward);
             bkg_fit_forward->Scale(dat_fit_forward->Integral() / bkg_fit_forward->Integral());
             TLegend *legend2 = new TLegend(0.12, 0.8, 0.3, 0.9);
             legend2->AddEntry(dat_fit_forward, "Fit Data");
@@ -650,6 +622,8 @@ void bidirectional(int argc, char* argv[]){
             bkg_fit_forward->Draw("sameE0");
             legend2->Draw();
 
+            //store ts for later
+            double ts1 = -2*(src_BB(fracs_for[2], fracs_for[3]) - nosrc_BB(fracs_for[5]));
 
             //Run Backward Fit
             TH1F* temp = DAT_HIST;
@@ -658,29 +632,8 @@ void bidirectional(int argc, char* argv[]){
             double fracs_back[6];
             fit(indices, *args, alpha, fracs_back);
 
-            //Plot Backwards Raw
-            c1->cd(4);
-            DAT_HIST->SetLineColor(4);
-            BKG_HIST->SetLineColor(6);
-            DAT_HIST->SetStats(false);
-            BKG_HIST->SetStats(false);
-            title << OUTPATH << " " << "Raw Backwards";
-            DAT_HIST->SetTitle(title.str().c_str());
-            title.str("");
-            BKG_HIST->Scale(DAT_HIST->Integral() / BKG_HIST->Integral());
-            TLegend *legend3 = new TLegend(0.12, 0.8, 0.3, 0.9);
-            legend3->AddEntry(DAT_HIST, "Raw Data");
-            legend3->AddEntry(BKG_HIST, "Raw Bkg");
-            DAT_HIST->SetMinimum(0);
-            DAT_HIST->SetMaximum(std::max(DAT_HIST->GetMaximum(), BKG_HIST->GetMaximum())*1.1);
-            DAT_HIST->Draw();
-            DAT_HIST->Draw("sameE0");
-            BKG_HIST->Draw("same");
-            BKG_HIST->Draw("sameE0");
-            legend3->Draw();
-
             //Plot Backward Fit
-            c1->cd(5);
+            c1->cd(4);
             TH1F* dat_fit_back = new TH1F("DFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
             TH1F* bkg_fit_back = new TH1F("BFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
             dat_fit_back->SetLineColor(4);
@@ -690,7 +643,7 @@ void bidirectional(int argc, char* argv[]){
             title << OUTPATH << " " << "Fit Backward";
             dat_fit_back->SetTitle(title.str().c_str());
             title.str("");
-            src_BB(fracs_back[0], fracs_back[1], false, dat_fit_back, bkg_fit_back);
+            src_BB(fracs_back[2], fracs_back[3], false, dat_fit_back, bkg_fit_back);
             bkg_fit_back->Scale(dat_fit_back->Integral() / bkg_fit_back->Integral());
             TLegend *legend4 = new TLegend(0.12, 0.8, 0.3, 0.9);
             legend4->AddEntry(dat_fit_back, "Fit Data");
@@ -704,11 +657,11 @@ void bidirectional(int argc, char* argv[]){
             legend4->Draw();
 
             //Plot Raw Comp & Pulls
-            c1->cd(3);
-            TH1F* dat1 = new TH1F(*dat_hist);
+            c1->cd(2);
+            TH1F* dat1 = new TH1F(*BKG_HIST);
             TH1F* dat2 = new TH1F(*DAT_HIST);
-            dat1->SetLineColor(8);
-            dat2->SetLineColor(9);
+            dat1->SetLineColor(1);
+            dat2->SetLineColor(2);
             dat1->SetTitle("Raw Comparison");
             dat2->Scale(dat1->Integral() / dat2->Integral());
             TRatioPlot_BetterError* rp_raw = new TRatioPlot_BetterError(dat1, dat2, "diffsig");
@@ -721,11 +674,11 @@ void bidirectional(int argc, char* argv[]){
             legend5->Draw();
 
             //Plot Fit Comp & Pulls
-            c1->cd(6);
+            c1->cd(5);
             TH1F* fit1 = new TH1F(*dat_fit_forward);
             TH1F* fit2 = new TH1F(*dat_fit_back);
-            fit1->SetLineColor(8);
-            fit2->SetLineColor(9);
+            fit1->SetLineColor(1);
+            fit2->SetLineColor(2);
             fit1->SetTitle("Fit Comparison");
             fit2->Scale(fit1->Integral() / fit2->Integral());
             TRatioPlot_BetterError* rp_fit = new TRatioPlot_BetterError(fit1, fit2, "diffsig");
@@ -737,6 +690,103 @@ void bidirectional(int argc, char* argv[]){
             legend6->AddEntry(fit2, "Sample 2");
             legend6->Draw();
 
+            //Write Forward Fit Data
+            c1->cd(3);
+            TPaveText *pt1 = new TPaveText(0, 0, 1, 1);
+            std::stringstream line;
+            pt1->AddText(.5, .95, "Forward Fit Values:");
+            line << "P_b = " << fracs_for[2];
+            pt1->AddText(.05, .85, line.str().c_str());
+            line.str("");
+            line << "P_s = " << fracs_for[3];
+            pt1->AddText(.05, .8, line.str().c_str());
+            line.str("");
+            line << "TS = " << ts1;
+            pt1->AddText(.05, .75, line.str().c_str());
+            line.str("");
+            line << "Data Count = " << BKG_HIST->Integral();
+            pt1->AddText(.05, .7, line.str().c_str());
+            line.str("");
+            line << "Bkg Count = " << DAT_HIST->Integral();
+            pt1->AddText(.05, .65, line.str().c_str());
+            line.str("");
+            pt1->AddLine(0, .5, 1, .5);
+            pt1->AddText(.5, .4, "Bin Boundaries:");
+            if(args->bin_vars & 1){
+              line << "Zenith Angle: " << ZABINS[indices.za] << "-" << ZABINS[indices.za+1];
+              pt1->AddText(.05, .3, line.str().c_str());
+              line.str("");
+            }
+            if(args->bin_vars & 2){
+              line << "Energy: " << EBINS[indices.e] << "-" << EBINS[indices.e+1];
+              pt1->AddText(.05, .25, line.str().c_str());
+              line.str("");
+            }
+            if(args->bin_vars & 4){
+              line << "Telescope: " << TBINS[indices.tel];
+              pt1->AddText(.05, .2, line.str().c_str());
+              line.str("");
+            }
+            if(args->bin_vars & 8){
+              line << "Azimuth: " << AZBINS[indices.az] << "-" << AZBINS[indices.az+1];
+              pt1->AddText(.05, .15, line.str().c_str());
+              line.str("");
+            }
+            if(args->bin_vars & 16){
+              line << "Offset: " << OBINS[indices.off] << "-" << OBINS[indices.off+1];
+              pt1->AddText(.05, .1, line.str().c_str());
+              line.str("");
+            }
+            pt1->SetAllWith("=", "size", .05);
+            pt1->SetAllWith("=", "align", 12);
+            pt1->SetAllWith(": ", "size", .05);
+            pt1->SetAllWith(": ", "align", 12);
+            pt1->Draw();
+
+
+            //Write Backward Fit Data
+            c1->cd(6);
+            double ts2 = -2*(src_BB(fracs_back[2], fracs_back[3]) - nosrc_BB(fracs_back[5]));
+            TPaveText *pt2 = new TPaveText(0, 0, 1, 1);
+            pt2->AddText(.5, .95, "Backward Fit Values:");
+            line << "P_b = " << fracs_back[2];
+            pt2->AddText(.05, .85, line.str().c_str());
+            line.str("");
+            line << "P_s = " << fracs_back[3];
+            pt2->AddText(.05, .8, line.str().c_str());
+            line.str("");
+            line << "TS = " << ts2;
+            pt2->AddText(.05, .75, line.str().c_str());
+            line.str("");
+            line << "Data Count = " << DAT_HIST->Integral();
+            pt2->AddText(.05, .7, line.str().c_str());
+            line.str("");
+            line << "Bkg Count = " << BKG_HIST->Integral();
+            pt2->AddText(.05, .65, line.str().c_str());
+            line.str("");
+            pt2->AddLine(0, .5, 1, .5);
+            if(args->op_info.c_str()){
+              std::ifstream infile(args->op_info);
+              std::string readline;
+              std::getline(infile, readline);
+              pt2->AddText(.05, .4, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.05, .35, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.05, .3, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.05, .25, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.05, .2, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.05, .15, readline.c_str())->SetTextAlign(12);
+              infile.close();
+            }
+
+            pt2->SetAllWith("=", "size", .05);
+            pt2->SetAllWith("=", "align", 12);
+            pt2->Draw();
+
 
             //Save
             title << "Bidirectional_" << OUTPATH << ".png";
@@ -746,15 +796,11 @@ void bidirectional(int argc, char* argv[]){
             delete DAT_HIST;
             delete BKG_HIST;
             delete SRC_HIST;
-            delete dat_hist;
-            delete bkg_hist;
             delete dat_fit_forward;
             delete bkg_fit_forward;
             delete dat_fit_back;
             delete bkg_fit_back;
-            delete legend1;
             delete legend2;
-            delete legend3;
             delete legend4;
             delete legend5;
             delete legend6;
@@ -885,6 +931,9 @@ int parse_command_line(int argc, char* argv[], args_t* args){
       if(i < argc - 1 && !strcmp(argv[i+1], "all")){
         args->graphics = 3;
       }
+    }
+    if(!strcmp(argv[i], "-op") || !strcmp(argv[i], "--op-info")){
+      if(i < argc -1) args->op_info = argv[i+1];
     }
   }
   return 0;
