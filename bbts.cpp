@@ -828,21 +828,47 @@ int main(int argc, char** argv){
 int parse_command_line(int argc, char* argv[], args_t* args){
   for(int i = 0; i < argc; i++){
     if(!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
-      std::cout << "OPTIONS:" << std::endl
-                << "  -d FORMAT, --data-format FORMAT" << std::endl
-                << "    Format of the imput data. Available: toy, csv, vegas, sample. Default: toy." << std::endl
-                << "  -h, --help" << std::endl
-                << "    Print this message." << std::endl
-                << "  -hist DATA, --histogram DATA" << std::endl
-                << "    Triggers output of histograms. Available: none, raw, fit, all. Default: none." << std::endl
-                << "  -out DATA, --output DATA" << std::endl
-                << "    Triggers output of ascii files. Available: none, bins, raw, errors, cuts, all. Default: none." << std::endl
-                << "  -v VERBOSITY, --verbosity VERBOSITY" << std::endl
-                << "    Controls the verbosity of MINUIT. Default: -1." << std::endl
-                << "  -b VAR, --bin-variable VAR" << std::endl
-                << "    Sets which variables to bin over. Available: zenith, energy, telescope, azimuth, offset, all. Default: zenith, energy, telescope." << std::endl
-                << "  -g GRAPHICS, --graphics GRAPHICS" << std::endl
-                << "    Triggers output of graphics files. Available: none, stdlnL, bblnL, all. Default: none." << std::endl;
+      const char *help_text = R"(
+OPTIONS:
+  -b VAR, --bin-variable VAR
+    Sets which variables to bin over.
+    Available: zenith, energy, telescope, azimuth, offset, all.
+    Default: zenith, energy, telescope.
+
+  --bidirectional
+    Runs the fit normally, then swaps data and bkg and runs the fit again.
+
+  -d FORMAT, --data-format FORMAT
+    Format of the imput data.
+    Available: toy, csv, vegas, sample.
+    Default: toy.
+
+  -g GRAPHICS, --graphics GRAPHICS
+    Triggers output of graphics files.
+    Available: none, stdlnL, bblnL, all.
+    Default: none.
+
+  -h, --help
+    Print help text and exit.
+
+  -hist DATA, --histogram DATA
+    Triggers output of histograms.
+    Available: none, raw, fit, all.
+    Default: none.
+
+  -op_info PATH
+    Passes file path to be used where optional info is printed.
+
+  -out DATA, --output DATA
+    Triggers output of ascii files.
+    Available: none, bins, raw, errors, cuts, all.
+    Default: none.
+
+  -v VERBOSITY, --verbosity VERBOSITY
+    Controls the verbosity of MINUIT.
+    Default: -1.
+      )";
+      std::cout << help_text << std::endl;
       return 1;
     }
     if(!strcmp(argv[i], "-d") || !strcmp(argv[i], "--data-format")){
