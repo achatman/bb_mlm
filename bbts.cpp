@@ -696,45 +696,45 @@ void bidirectional(int argc, char* argv[]){
             std::stringstream line;
             pt1->AddText(.5, .95, "Forward Fit Values:");
             line << "P_b = " << fracs_for[2];
-            pt1->AddText(.2, .85, line.str().c_str());
+            pt1->AddText(.05, .85, line.str().c_str());
             line.str("");
             line << "P_s = " << fracs_for[3];
-            pt1->AddText(.2, .8, line.str().c_str());
+            pt1->AddText(.05, .8, line.str().c_str());
             line.str("");
             line << "TS = " << ts1;
-            pt1->AddText(.2, .75, line.str().c_str());
+            pt1->AddText(.05, .75, line.str().c_str());
             line.str("");
             line << "Data Count = " << BKG_HIST->Integral();
-            pt1->AddText(.2, .7, line.str().c_str());
+            pt1->AddText(.05, .7, line.str().c_str());
             line.str("");
             line << "Bkg Count = " << DAT_HIST->Integral();
-            pt1->AddText(.2, .65, line.str().c_str());
+            pt1->AddText(.05, .65, line.str().c_str());
             line.str("");
             pt1->AddLine(0, .5, 1, .5);
             pt1->AddText(.5, .4, "Bin Boundaries:");
             if(args->bin_vars & 1){
               line << "Zenith Angle: " << ZABINS[indices.za] << "-" << ZABINS[indices.za+1];
-              pt1->AddText(.2, .3, line.str().c_str());
+              pt1->AddText(.05, .3, line.str().c_str());
               line.str("");
             }
             if(args->bin_vars & 2){
               line << "Energy: " << EBINS[indices.e] << "-" << EBINS[indices.e+1];
-              pt1->AddText(.2, .25, line.str().c_str());
+              pt1->AddText(.05, .25, line.str().c_str());
               line.str("");
             }
             if(args->bin_vars & 4){
               line << "Telescope: " << TBINS[indices.tel];
-              pt1->AddText(.2, .2, line.str().c_str());
+              pt1->AddText(.05, .2, line.str().c_str());
               line.str("");
             }
-            if(args->bin_vars & 1){
+            if(args->bin_vars & 8){
               line << "Azimuth: " << AZBINS[indices.az] << "-" << AZBINS[indices.az+1];
-              pt1->AddText(.2, .15, line.str().c_str());
+              pt1->AddText(.05, .15, line.str().c_str());
               line.str("");
             }
-            if(args->bin_vars & 1){
+            if(args->bin_vars & 16){
               line << "Offset: " << OBINS[indices.off] << "-" << OBINS[indices.off+1];
-              pt1->AddText(.2, .1, line.str().c_str());
+              pt1->AddText(.05, .1, line.str().c_str());
               line.str("");
             }
             pt1->SetAllWith("=", "size", .05);
@@ -750,36 +750,36 @@ void bidirectional(int argc, char* argv[]){
             TPaveText *pt2 = new TPaveText(0, 0, 1, 1);
             pt2->AddText(.5, .95, "Backward Fit Values:");
             line << "P_b = " << fracs_back[2];
-            pt2->AddText(.2, .85, line.str().c_str());
+            pt2->AddText(.05, .85, line.str().c_str());
             line.str("");
             line << "P_s = " << fracs_back[3];
-            pt2->AddText(.2, .8, line.str().c_str());
+            pt2->AddText(.05, .8, line.str().c_str());
             line.str("");
             line << "TS = " << ts2;
-            pt2->AddText(.2, .75, line.str().c_str());
+            pt2->AddText(.05, .75, line.str().c_str());
             line.str("");
             line << "Data Count = " << DAT_HIST->Integral();
-            pt2->AddText(.2, .7, line.str().c_str());
+            pt2->AddText(.05, .7, line.str().c_str());
             line.str("");
             line << "Bkg Count = " << BKG_HIST->Integral();
-            pt2->AddText(.2, .65, line.str().c_str());
+            pt2->AddText(.05, .65, line.str().c_str());
             line.str("");
             pt2->AddLine(0, .5, 1, .5);
             if(args->op_info.c_str()){
               std::ifstream infile(args->op_info);
               std::string readline;
               std::getline(infile, readline);
-              pt2->AddText(.2, .4, readline.c_str())->SetTextAlign(12);
+              pt2->AddText(.05, .4, readline.c_str())->SetTextAlign(12);
               std::getline(infile, readline);
-              pt2->AddText(.2, .35, readline.c_str())->SetTextAlign(12);
+              pt2->AddText(.05, .35, readline.c_str())->SetTextAlign(12);
               std::getline(infile, readline);
-              pt2->AddText(.2, .3, readline.c_str())->SetTextAlign(12);
+              pt2->AddText(.05, .3, readline.c_str())->SetTextAlign(12);
               std::getline(infile, readline);
-              pt2->AddText(.2, .25, readline.c_str())->SetTextAlign(12);
+              pt2->AddText(.05, .25, readline.c_str())->SetTextAlign(12);
               std::getline(infile, readline);
-              pt2->AddText(.2, .2, readline.c_str())->SetTextAlign(12);
+              pt2->AddText(.05, .2, readline.c_str())->SetTextAlign(12);
               std::getline(infile, readline);
-              pt2->AddText(.2, .15, readline.c_str())->SetTextAlign(12);
+              pt2->AddText(.05, .15, readline.c_str())->SetTextAlign(12);
               infile.close();
             }
 
