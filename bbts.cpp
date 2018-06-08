@@ -446,9 +446,6 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs = 0){
     << lnL_src_bb << ","
     << TS_bb << std::endl;
   f.close();
-  std::cout << "HELLO" << std::endl;
-  std::cout << lnL_nosrc_bb << std::endl << lnL_src_bb << std::endl << TS_bb << std::endl;
-  std::cout << fit_nosrc_bb->GetParameter(0) << std::endl;
 
   f.open("summary.csv", std::ios::out | std::ios::app);
   if(args.bin_vars & 1) f << ins.za << ",";
@@ -694,12 +691,6 @@ void bidirectional(int argc, char* argv[]){
 
             //Write Forward Fit Data
             c1->cd(3);
-
-            std::cout << src_BB(fracs_for[2], fracs_for[3]) << std::endl;
-            std::cout << nosrc_BB(fracs_for[5]) << std::endl;
-            std::cout << -2*(src_BB(fracs_for[2], fracs_for[3]) - nosrc_BB(fracs_for[5])) << std::endl;
-            std::cout << ts1 << std::endl;
-            std::cout << fracs_for[2] << std::endl << fracs_for[3] << std::endl << fracs_for[5] << std::endl;
             TPaveText *pt1 = new TPaveText(0, 0, 1, 1);
             std::stringstream line;
             pt1->AddText(.5, .95, "Forward Fit Values:");
