@@ -593,6 +593,7 @@ void bidirectional(int argc, char* argv[]){
             fit(indices, *args, alpha, fracs_for);
 
             //Plot Forwards
+            gStyle->SetOptStat(0);
             TCanvas *c1 = new TCanvas("",OUTPATH.c_str(),1600,1600);
             c1->Divide(3,2);
             std::stringstream title;
@@ -695,15 +696,51 @@ void bidirectional(int argc, char* argv[]){
             std::stringstream line;
             pt1->AddText(.5, .95, "Forward Fit Values:");
             line << "P_b = " << fracs_for[2];
-            pt1->AddText(.25, .8, line.str().c_str());
+            pt1->AddText(.2, .85, line.str().c_str());
             line.str("");
             line << "P_s = " << fracs_for[3];
-            pt1->AddText(.75, .8, line.str().c_str());
+            pt1->AddText(.2, .8, line.str().c_str());
             line.str("");
             line << "TS = " << ts1;
-            pt1->AddText(.5, .7, line.str().c_str());
+            pt1->AddText(.2, .75, line.str().c_str());
             line.str("");
+            line << "Data Count = " << BKG_HIST->Integral();
+            pt1->AddText(.2, .7, line.str().c_str());
+            line.str("");
+            line << "Bkg Count = " << DAT_HIST->Integral();
+            pt1->AddText(.2, .65, line.str().c_str());
+            line.str("");
+            pt1->AddLine(0, .5, 1, .5);
+            pt1->AddText(.5, .4, "Bin Boundaries:");
+            if(args->bin_vars & 1){
+              line << "Zenith Angle: " << ZABINS[zi] << "-" << ZABINS[zi+1];
+              pt1->AddText(.2, .3, line.str().c_str());
+              line.str("");
+            }
+            if(args->bin_vars & 2){
+              line << "Energy: " << EBINS[ei] << "-" << EBINS[ei+1];
+              pt1->AddText(.2, .25, line.str().c_str());
+              line.str("");
+            }
+            if(args->bin_vars & 4){
+              line << "Telescope: " << TBINS[ti];
+              pt1->AddText(.2, .2, line.str().c_str());
+              line.str("");
+            }
+            if(args->bin_vars & 1){
+              line << "Azimuth: " << AZBINS[ai] << "-" << AZBINS[ai+1];
+              pt1->AddText(.2, .15, line.str().c_str());
+              line.str("");
+            }
+            if(args->bin_vars & 1){
+              line << "Offset: " << OBINS[oi] << "-" << OBINS[oi+1];
+              pt1->AddText(.2, .1, line.str().c_str());
+              line.str("");
+            }
             pt1->SetAllWith("=", "size", .05);
+            pt1->SetAllWith("=", "align", 12);
+            pt1->SetAllWith(": ", "size", .05);
+            pt1->SetAllWith(": ", "align", 12);
             pt1->Draw();
 
 
@@ -713,14 +750,23 @@ void bidirectional(int argc, char* argv[]){
             TPaveText *pt2 = new TPaveText(0, 0, 1, 1);
             pt2->AddText(.5, .95, "Backward Fit Values:");
             line << "P_b = " << fracs_back[2];
-            pt2->AddText(.25, .8, line.str().c_str());
+            pt2->AddText(.2, .85, line.str().c_str());
             line.str("");
             line << "P_s = " << fracs_back[3];
-            pt2->AddText(.75, .8, line.str().c_str());
+            pt2->AddText(.2, .8, line.str().c_str());
             line.str("");
             line << "TS = " << ts2;
-            pt2->AddText(.5, .7, line.str().c_str());
+            pt2->AddText(.2, .75, line.str().c_str());
+            line.str("");
+            line << "Data Count = " << DAT_HIST->Integral();
+            pt2->AddText(.2, .7, line.str().c_str());
+            line.str("");
+            line << "Bkg Count = " << BKG_HIST->Integral();
+            pt2->AddText(.2, .65, line.str().c_str());
+            line.str("");
+            pt2->AddLine(0, .5, 1, .5);
             pt2->SetAllWith("=", "size", .05);
+            pt2->SetAllWith("=", "align", 12);
             pt2->Draw();
 
 
