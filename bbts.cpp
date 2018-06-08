@@ -713,27 +713,27 @@ void bidirectional(int argc, char* argv[]){
             pt1->AddLine(0, .5, 1, .5);
             pt1->AddText(.5, .4, "Bin Boundaries:");
             if(args->bin_vars & 1){
-              line << "Zenith Angle: " << ZABINS[zi] << "-" << ZABINS[zi+1];
+              line << "Zenith Angle: " << ZABINS[indices.za] << "-" << ZABINS[indices.za+1];
               pt1->AddText(.2, .3, line.str().c_str());
               line.str("");
             }
             if(args->bin_vars & 2){
-              line << "Energy: " << EBINS[ei] << "-" << EBINS[ei+1];
+              line << "Energy: " << EBINS[indices.e] << "-" << EBINS[indices.e+1];
               pt1->AddText(.2, .25, line.str().c_str());
               line.str("");
             }
             if(args->bin_vars & 4){
-              line << "Telescope: " << TBINS[ti];
+              line << "Telescope: " << TBINS[indices.tel];
               pt1->AddText(.2, .2, line.str().c_str());
               line.str("");
             }
             if(args->bin_vars & 1){
-              line << "Azimuth: " << AZBINS[ai] << "-" << AZBINS[ai+1];
+              line << "Azimuth: " << AZBINS[indices.az] << "-" << AZBINS[indices.az+1];
               pt1->AddText(.2, .15, line.str().c_str());
               line.str("");
             }
             if(args->bin_vars & 1){
-              line << "Offset: " << OBINS[oi] << "-" << OBINS[oi+1];
+              line << "Offset: " << OBINS[indices.off] << "-" << OBINS[indices.off+1];
               pt1->AddText(.2, .1, line.str().c_str());
               line.str("");
             }
