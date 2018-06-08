@@ -796,7 +796,7 @@ OPTIONS:
     Available: none, raw, fit, all.
     Default: none.
 
-  -op_info PATH
+  -op, --op-info PATH
     Passes file path to be used where optional info is printed.
 
   -out DATA, --output DATA
