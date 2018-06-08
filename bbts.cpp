@@ -15,8 +15,11 @@ double AZBINS[] = {0,45,90,135,180,225,270,315,360};
 double OBINS[] = {0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0};
 
 
-//extra function declarations
+//helper function declarations
 int parse_command_line(int argc, char* argv[], args_t* args);
+void prepare_std_output_files(args_t args);
+int optional_binning(indices_t indices, args_t args);
+//output function declarations
 void printRawData();
 void histogram_raw_data(indices_t ins);
 void histogram_fit_data(double fracs[6], indices_t ins);
@@ -474,23 +477,7 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs = 0){
 void run(int argc, char* argv[]){
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return;
-
-  //Setup output files
-  std::ofstream f1("fitstats_bb.csv");
-  std::ofstream f2("fitstats_nobb.csv");
-  std::ofstream f3("summary.csv");
-  if(args->bin_vars & 1)  {f1 << "ZA,"; f2 << "ZA,"; f3 << "ZA,";}
-  if(args->bin_vars & 2)  {f1 << "E,"; f2 << "E,"; f3 << "E,";}
-  if(args->bin_vars & 4)  {f1 << "T,"; f2 << "T,"; f3 << "T,";}
-  if(args->bin_vars & 8)  {f1 << "A,"; f2 << "A,"; f3 << "A,";}
-  if(args->bin_vars & 16) {f1 << "O,"; f2 << "O,"; f3 << "O,";}
-
-  f1 << "bkgfrac_nosrc, bkgfrac, srcfrac, dataCt, bkgCt, srcCt, lnL_nosrc, lnL_src, TS" << std::endl;
-  f2 << "bkgfrac_nosrc, bkgfrac, srcfrac, dataCt, bkgCt, srcCt, lnL_nosrc, lnL_src, TS" << std::endl;
-  f3 << "ct_ratio,TS_noBB,TS_BB,Lima_std,Lima_bb" << std::endl;
-  f1.close(); f2.close(); f3.close();
-
-  if(args->output & 8) print_cuts("reset", 0);
+  prepare_std_output_files(*args);
   int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0;
   indices_t indices;
   for(indices.za = zi; indices.za < 2; indices.za++){
@@ -498,33 +485,9 @@ void run(int argc, char* argv[]){
       for(indices.tel = ti; indices.tel < 2; indices.tel++){
         for(indices.az = ai; indices.az < 8; indices.az++){
           for(indices.off = oi; indices.off < 8; indices.off++){
-            //This takes care of optional binning in a rather crude manner
-            //TODO put this in a separate function
-            std::stringstream path;
-            if(!(args->bin_vars & 1)){
-              if(indices.za != zi) continue;
-            }
-            else path << "ZA" << indices.za;
-            if(!(args->bin_vars & 2)){
-              if(indices.e != ei) continue;
-            }
-            else path << "E" << indices.e;
-            if(!(args->bin_vars & 4)){
-              if(indices.tel != ti) continue;
-            }
-            else path << "T" << TBINS[indices.tel];
-            if(!(args->bin_vars & 8)){
-              if(indices.az != ai) continue;
-            }
-            else path << "A" << indices.az;
-            if(!(args->bin_vars & 16)){
-              if(indices.off != oi) continue;
-            }
-            else path << "O" << indices.off;
+            if(optional_binning(indices, *args)) continue;
 
             //Run Fit
-            std::cout << path.str() << std::endl;
-            OUTPATH = path.str();
             double alpha = 1;
             TH1::SetDefaultSumw2();
             DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
@@ -549,7 +512,7 @@ void run(int argc, char* argv[]){
 void bidirectional(int argc, char* argv[]){
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return;
-
+  prepare_std_output_files(*args);
   int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0;
   indices_t indices;
   for(indices.za = zi; indices.za < 2; indices.za++){
@@ -557,31 +520,8 @@ void bidirectional(int argc, char* argv[]){
       for(indices.tel = ti; indices.tel < 2; indices.tel++){
         for(indices.az = ai; indices.az < 8; indices.az++){
           for(indices.off = oi; indices.off < 8; indices.off++){
-            std::stringstream path;
-            if(!(args->bin_vars & 1)){
-              if(indices.za != zi) continue;
-            }
-            else path << "ZA" << indices.za;
-            if(!(args->bin_vars & 2)){
-              if(indices.e != ei) continue;
-            }
-            else path << "E" << indices.e;
-            if(!(args->bin_vars & 4)){
-              if(indices.tel != ti) continue;
-            }
-            else path << "T" << TBINS[indices.tel];
-            if(!(args->bin_vars & 8)){
-              if(indices.az != ai) continue;
-            }
-            else path << "A" << indices.az;
-            if(!(args->bin_vars & 16)){
-              if(indices.off != oi) continue;
-            }
-            else path << "O" << indices.off;
-
+            if(optional_binning(indices, *args)) continue;
             //Run Forward Fit
-            std::cout << path.str() << std::endl;
-            OUTPATH = path.str();
             double alpha = 1;
             TH1::SetDefaultSumw2();
             DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
@@ -824,7 +764,7 @@ int main(int argc, char** argv){
 }
 
 
-//Extras
+//Helpers
 int parse_command_line(int argc, char* argv[], args_t* args){
   for(int i = 0; i < argc; i++){
     if(!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")){
@@ -965,6 +905,51 @@ OPTIONS:
   return 0;
 }
 
+void prepare_std_output_files(args_t args){
+  std::ofstream f1("fitstats_bb.csv");
+  std::ofstream f2("fitstats_nobb.csv");
+  std::ofstream f3("summary.csv");
+  if(args.bin_vars & 1)  {f1 << "ZA,"; f2 << "ZA,"; f3 << "ZA,";}
+  if(args.bin_vars & 2)  {f1 << "E,"; f2 << "E,"; f3 << "E,";}
+  if(args.bin_vars & 4)  {f1 << "T,"; f2 << "T,"; f3 << "T,";}
+  if(args.bin_vars & 8)  {f1 << "A,"; f2 << "A,"; f3 << "A,";}
+  if(args.bin_vars & 16) {f1 << "O,"; f2 << "O,"; f3 << "O,";}
+  f1 << "bkgfrac_nosrc, bkgfrac, srcfrac, dataCt, bkgCt, srcCt, lnL_nosrc, lnL_src, TS" << std::endl;
+  f2 << "bkgfrac_nosrc, bkgfrac, srcfrac, dataCt, bkgCt, srcCt, lnL_nosrc, lnL_src, TS" << std::endl;
+  f3 << "ct_ratio,TS_noBB,TS_BB,Lima_std,Lima_bb" << std::endl;
+  f1.close(); f2.close(); f3.close();
+  if(args.output & 8) print_cuts("reset", 0);
+}
+
+int optional_binning(indices_t indices, args_t args){
+  std::stringstream path;
+  int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0; //TODO
+  if(!(args.bin_vars & 1)){
+    if(indices.za != zi) return 1;
+  }
+  else path << "ZA" << indices.za;
+  if(!(args.bin_vars & 2)){
+    if(indices.e != ei) return 1;
+  }
+  else path << "E" << indices.e;
+  if(!(args.bin_vars & 4)){
+    if(indices.tel != ti) return 1;
+  }
+  else path << "T" << TBINS[indices.tel];
+  if(!(args.bin_vars & 8)){
+    if(indices.az != ai) return 1;
+  }
+  else path << "A" << indices.az;
+  if(!(args.bin_vars & 16)){
+    if(indices.off != oi) return 1;
+  }
+  else path << "O" << indices.off;
+  std::cout << path.str() << std::endl;
+  OUTPATH = path.str();
+  return 0;
+}
+
+//Output
 void printRawData(){
   if(!(DAT_HIST->Integral() + BKG_HIST->Integral())) return;
   std::stringstream path;
