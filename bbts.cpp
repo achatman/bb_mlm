@@ -765,6 +765,24 @@ void bidirectional(int argc, char* argv[]){
             pt2->AddText(.2, .65, line.str().c_str());
             line.str("");
             pt2->AddLine(0, .5, 1, .5);
+            if(args->op_info.c_str()){
+              std::ifstream infile(args->op_info);
+              std::string readline;
+              std::getline(infile, readline);
+              pt2->AddText(.2, .4, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.2, .35, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.2, .3, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.2, .25, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.2, .2, readline.c_str())->SetTextAlign(12);
+              std::getline(infile, readline);
+              pt2->AddText(.2, .15, readline.c_str())->SetTextAlign(12);
+              infile.close();
+            }
+
             pt2->SetAllWith("=", "size", .05);
             pt2->SetAllWith("=", "align", 12);
             pt2->Draw();
@@ -913,6 +931,9 @@ int parse_command_line(int argc, char* argv[], args_t* args){
       if(i < argc - 1 && !strcmp(argv[i+1], "all")){
         args->graphics = 3;
       }
+    }
+    if(!strcmp(argv[i], "-op") || !strcmp(argv[i], "--op-info")){
+      if(i < argc -1) args->op_info = argv[i+1];
     }
   }
   return 0;

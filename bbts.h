@@ -72,6 +72,7 @@ struct args_t {
   int verbosity;
   int bin_vars;
   int graphics;
+  std::string op_info;
 };
 struct indices_t{
   int za;
