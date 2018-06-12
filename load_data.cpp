@@ -154,71 +154,7 @@ double loadData_toy(indices_t ins, args_t args, std::string pathbase, TH1F* HIST
   return livetime;
 }
 
-/*
-TH1F** loadData_csv(indices_t ins, args_t args, double* alpha){
-  std::ifstream dataif("data.list");
-  std::ifstream bkgif("bkg.list");
-  std::ifstream srcif("src.list");
-  std::string datastr, bkgstr, srcstr;
-  std::stringstream dataPath, bkgPath, srcPath;
-  std::getline(dataif, datastr);
-  std::getline(bkgif,  bkgstr );
-  std::getline(srcif,  srcstr );
-  Int_t index;
-  index = datastr.find("ZA");
-  dataPath << datastr.substr(0, index) << "ZA_" << ZABINS[ins.za] << "_" << ZABINS[ins.za + 1] << "_E" << ins.e << "_T" << TBINS[ins.tel] << ".csv";
-  index = bkgstr.find("ZA");
-  bkgPath << bkgstr.substr(0, index) << "ZA_" << ZABINS[ins.za] << "_" << ZABINS[ins.za + 1] << "_E" << ins.e << "_T" << TBINS[ins.tel] << ".csv";
-  index = srcstr.find("ZA");
-  srcPath << srcstr.substr(0, index) << "ZA_" << ZABINS[ins.za] << "_" << ZABINS[ins.za + 1] << "_E" << ins.e << "_T" << TBINS[ins.tel] << ".csv";
-
-  //Create TTrees and open files
-  TTree *dataTree= new TTree("DATA","datatree");
-  TTree *bkgTree = new TTree("BKG","bkgtree");
-  TTree *srcTree = new TTree("SRC","srctree");
-
-  //If any file fails to open, execution is aborted
-  if(!(dataTree->ReadFile(dataPath.str().c_str(),"ZA:MSW",','))){
-    throw 2;
-  }
-  if(!(bkgTree->ReadFile(bkgPath.str().c_str(),"ZA:MSW",','))){
-    throw 1;
-  }
-  if(!(srcTree->ReadFile(srcPath.str().c_str(),"ZA:MSW",','))){
-    throw 3;
-  }
-
-  TH1::SetDefaultSumw2();
-  TH1F* DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
-  TH1F* BKG_HIST =  new TH1F("BkgHist" , "BKG" , NBIN, MSWLOW, MSWHIGH);
-  TH1F* SRC_HIST =  new TH1F("SrcHist" , "SRC" , NBIN, MSWLOW, MSWHIGH);
-
-  TTreeReader dataReader(dataTree);
-  TTreeReaderValue<float> datamsw(dataReader,"MSW");
-  TTreeReader bkgReader(bkgTree);
-  TTreeReaderValue<float> bkgmsw(bkgReader,"MSW");
-  TTreeReader srcReader(srcTree);
-  TTreeReaderValue<float> srcmsw(srcReader,"MSW");
-
-  while(dataReader.Next()){
-    DAT_HIST->Fill(*datamsw);
-  }
-  while(bkgReader.Next()){
-    BKG_HIST->Fill(*bkgmsw);
-  }
-  while(srcReader.Next()){
-    SRC_HIST->Fill(*srcmsw);
-  }
-
-  std::cout << "Data: " << DAT_HIST->Integral() << " counts loaded." << std::endl;
-  std::cout << "Bkg: " << BKG_HIST->Integral() << " counts loaded." << std::endl;
-  std::cout << "Src: " << SRC_HIST->Integral() << " counts loaded." << std::endl;
-
-  return {DAT_HIST, BKG_HIST, SRC_HIST};
-}
-*/
-
-double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1F* HIST){
+double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1F* HIST, TH2F* HIST2D = 0){
   std::stringstream excl_file;
   excl_file << pathbase << "_src.txt";
   //Check for source exclusion file
@@ -353,6 +289,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1F* HI
     }
 
     HIST->Fill(shower->fMSW);
+    if(HIST2D) HIST2D->Fill(shower->fMSW, shower->fMSL);
   }
   cuts.passed = HIST->Integral();
   std::cout << cuts.passed << " passed cuts." << std::endl;
@@ -373,7 +310,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1F* HI
   return 1;
 }
 
-void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1F* HIST){
+void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1F* HIST, TH2F* HIST2D = 0){
   /*Load sample data that is easily and quickly repeatable for testing purposes.
    * Data hist is filled from the function 5x with ~1000 counts.
    * Bkg hist is filled from the function 5x with ~3000 counts.
@@ -397,9 +334,19 @@ void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1F* HIS
       HIST->Fill(gRandom->Gaus(1, .1));
     }
   }
+  if(HIST2D){
+    for(int i = 1; i <= NBIN; i++){
+      double nEvents = HIST->GetBinContent(i);
+      for(int j = 0; j < nEvents; j++){
+        double x = gRandom->Uniform(HIST->GetBinCenter(i) - .5*HIST->GetBinWidth(i), HIST->GetBinCenter(i) + .5*HIST->GetBinWidth(i));
+        double y = gRandom->Gaus(1, .15);
+        HIST2D->Fill(x,y);
+      }
+    }
+  }
 }
 
-void loadData(indices_t ins, args_t args, double *alpha, TH1F* DAT_HIST, TH1F* BKG_HIST, TH1F* SRC_HIST){
+void loadData(indices_t ins, args_t args, double *alpha, TH1F* DAT_HIST, TH1F* BKG_HIST, TH1F* SRC_HIST, TH2F* DAT_2HIST, TH2F* BKG_2HIST){
 
   if(args.format == Format_t::Toy){
     *alpha = loadData_toy(ins, args, "data", DAT_HIST) / loadData_toy(ins, args, "bkg", BKG_HIST);
@@ -407,14 +354,15 @@ void loadData(indices_t ins, args_t args, double *alpha, TH1F* DAT_HIST, TH1F* B
     std::cout << "Histograms loaded from Toy format." << std::endl;
   }
   else if(args.format == Format_t::Vegas){
-    *alpha = loadData_vegas(ins, args, "data", DAT_HIST) / loadData_vegas(ins, args, "bkg", BKG_HIST);
+    loadData_vegas(ins, args, "data", DAT_HIST, DAT_2HIST);
+    loadData_vegas(ins, args, "bkg", BKG_HIST, BKG_2HIST);
     *alpha = DAT_HIST->Integral() / BKG_HIST->Integral(); //TODO
     loadsrc_csv(ins, args, SRC_HIST);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
   }
   else if(args.format == Format_t::Sample){
-    loadData_sample(ins, args, "data", DAT_HIST);
-    loadData_sample(ins, args, "bkg", BKG_HIST);
+    loadData_sample(ins, args, "data", DAT_HIST, DAT_2HIST);
+    loadData_sample(ins, args, "bkg", BKG_HIST, BKG_2HIST);
     loadData_sample(ins, args, "src", SRC_HIST);
     *alpha = 3/5;
     std::cout << "Histograms loaded from Sample format." << std::endl;
@@ -423,4 +371,5 @@ void loadData(indices_t ins, args_t args, double *alpha, TH1F* DAT_HIST, TH1F* B
     std::cerr << "No valid data format specified." << std::endl;
     throw 999;
   }
+
 }
