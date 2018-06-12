@@ -96,6 +96,13 @@ struct cuts_t{
   int passed;
   int read;
 };
+struct hists_t{
+  TH1F* dat_hist;
+  TH1F* bkg_hist;
+  TH1F* src_hist;
+  TH2F* dat_2hist;
+  TH2F* bkg_2hist;
+};
 
 
 void print_cuts(std::string action, cuts_t* cuts);

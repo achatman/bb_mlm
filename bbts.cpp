@@ -22,7 +22,7 @@ int parse_command_line(int argc, char* argv[], args_t* args);
 void prepare_std_output_files(args_t args);
 int optional_binning(indices_t indices, args_t args);
 //output function declarations
-void printRawData();
+void printRawData(hists_t hists);
 void histogram_raw_data(indices_t ins);
 void histogram_fit_data(double fracs[6], indices_t ins, args_t *args);
 void calculate_errors(double Pb, double Ps, double sigma_Pb, double sigma_Ps, indices_t ins, double alpha);
@@ -722,7 +722,8 @@ int main(int argc, char* argv[]){
             double alpha = 1;
             loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST);
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
-            if(args->output & 2) printRawData();
+            hists_t hist_pointers = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST};
+            if(args->output & 2) printRawData(hist_pointers);
             if(args->hist & 1) histogram_raw_data(indices);
             if(args->graphics & 4) plot_msw_vs_msl();
 
@@ -933,17 +934,17 @@ int optional_binning(indices_t indices, args_t args){
 }
 
 //Output
-void printRawData(){
-  if(!(DAT_HIST->Integral() + BKG_HIST->Integral())) return;
+void printRawData(hists_t hists){
+  if(!(hists.dat_hist->Integral() + hists.dat_hist->Integral())) return;
   std::stringstream path;
   path << "raw_data_" << OUTPATH << ".csv";
   std::ofstream f(path.str().c_str());
   f << "MSW, di, bi, si" << std::endl;
   for(int i = 1; i <= NBIN; i++){
-    f << DAT_HIST->GetBinCenter(i) << ","
-      << DAT_HIST->GetBinContent(i) << ","
-      << BKG_HIST->GetBinContent(i) << ","
-      << SRC_HIST->GetBinContent(i) << std::endl;
+    f << hists.dat_hist->GetBinCenter(i) << ","
+      << hists.dat_hist->GetBinContent(i) << ","
+      << hists.bkg_hist->GetBinContent(i) << ","
+      << hists.src_hist->GetBinContent(i) << std::endl;
   }
 }
 
