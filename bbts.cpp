@@ -1348,7 +1348,7 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
     }
   }
 
-  gStyle->SetPalette(kSunset);
+  gStyle->SetPalette(kBlackBody);
   map->Draw("SURF3");
   std::stringstream out_file;
   out_file << boost::replace_all_copy(title.str(), " ", "_") << ".png";
