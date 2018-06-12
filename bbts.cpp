@@ -24,7 +24,7 @@ int optional_binning(indices_t indices, args_t args);
 //output function declarations
 void printRawData();
 void histogram_raw_data(indices_t ins);
-void histogram_fit_data(double fracs[6], indices_t ins);
+void histogram_fit_data(double fracs[6], indices_t ins, args_t *args);
 void calculate_errors(double Pb, double Ps, double sigma_Pb, double sigma_Ps, indices_t ins, double alpha);
 void print_cuts(std::string action, cuts_t* cuts);
 void fit_manual_bin();
@@ -730,7 +730,7 @@ int main(int argc, char* argv[]){
             else{
               double fracs[6];
               fit(indices, *args, alpha, fracs);
-              if(args->hist & 2) histogram_fit_data(fracs, indices);
+              if(args->hist & 2) histogram_fit_data(fracs, indices, args);
             }
 
           }
@@ -993,7 +993,7 @@ void histogram_raw_data(indices_t ins){
   delete legend;
 }
 
-void histogram_fit_data(double fracs[6], indices_t ins){
+void histogram_fit_data(double fracs[6], indices_t ins, args_t *args){
   if(!(DAT_HIST->Integral() + BKG_HIST->Integral())) return;
   std::stringstream filepath;
   filepath << "HIST_FIT_" << OUTPATH << ".png";
@@ -1085,27 +1085,47 @@ void histogram_fit_data(double fracs[6], indices_t ins){
   c1->cd(4);
   TPaveText *pt = new TPaveText(0, 0, 1, 1);
   std::stringstream line;
-  pt->AddText(.5, .95, "Standard Fit Values:");
+  pt->AddText(.05, .95, "Standard:")->SetTextAlign(12);
   line << "P_b = " << fracs[0];
-  pt->AddText(.25, .8, line.str().c_str());
+  pt->AddText(.05, .85, line.str().c_str())->SetTextAlign(12);
   line.str("");
   line << "P_s = " << fracs[1];
-  pt->AddText(.75, .8, line.str().c_str());
+  pt->AddText(.05, .8, line.str().c_str())->SetTextAlign(12);
   line.str("");
   line << "TS = " << -2 * (src_noBB(fracs[0], fracs[1]) - nosrc_noBB(fracs[4]));
-  pt->AddText(.5, .7, line.str().c_str());
-  pt->AddLine(0, .5, 1, .5);
-  pt->AddText(.5, .45, "Barlow-Beeston Fit Values:");
+  pt->AddText(.05, .75, line.str().c_str())->SetTextAlign(12);
+  pt->AddText(.55, .95, "Barlow-Beeston:")->SetTextAlign(12);
   line.str("");
   line << "P_b = " << fracs[2];
-  pt->AddText(.25, .3, line.str().c_str());
+  pt->AddText(.55, .85, line.str().c_str())->SetTextAlign(12);
   line.str("");
   line << "P_s = " << fracs[3];
-  pt->AddText(.75, .3, line.str().c_str());
+  pt->AddText(.55, .8, line.str().c_str())->SetTextAlign(12);
   line.str("");
   line << "TS = " << -2 * (src_BB(fracs[2], fracs[3]) - nosrc_BB(fracs[5]));
-  pt->AddText(.5, .2, line.str().c_str());
+  pt->AddText(.55, .75, line.str().c_str())->SetTextAlign(12);
+  pt->AddLine(0, .7, 1, .7);
   pt->SetAllWith("=", "size", .05);
+  if(args->op_info.c_str()){
+    std::ifstream infile(args->op_info);
+    std::string readline;
+    std::getline(infile, readline);
+    pt->AddText(.05, .6, readline.c_str())->SetTextAlign(12);
+    std::getline(infile, readline);
+    pt->AddText(.05, .5, readline.c_str())->SetTextAlign(12);
+    std::getline(infile, readline);
+    pt->AddText(.05, .4, readline.c_str())->SetTextAlign(12);
+    std::getline(infile, readline);
+    pt->AddText(.05, .3, readline.c_str())->SetTextAlign(12);
+    std::getline(infile, readline);
+    pt->AddText(.05, .2, readline.c_str())->SetTextAlign(12);
+    std::getline(infile, readline);
+    pt->AddText(.05, .1, readline.c_str())->SetTextAlign(12);
+    infile.close();
+  }
+
+
+
   pt->Draw();
 
   //Save and Clean up
@@ -1347,13 +1367,6 @@ void plot_msw_vs_msl(){
   DAT_2HIST->SetMinimum(dat < bkg ? dat : bkg);
   BKG_2HIST->SetMinimum(dat < bkg ? dat : bkg);
 
-  std::stringstream title;
-  title << dat_2hist->GetTitle() << " " << OUTPATH;
-  dat_2hist->SetTitle(title.str().c_str());
-  title.str("");
-  title << bkg_2hist->GetTitle() << " " << OUTPATH;
-  bkg_2hist->SetTitle(title.str().c_str());
-
   gStyle->SetPalette(kBlackBody);
   gStyle->SetOptStat(0);
 
@@ -1366,6 +1379,6 @@ void plot_msw_vs_msl(){
   BKG_2HIST->Draw("COLZ");
 
   std::stringstream out_file;
-  out_file << "MSWMSL_" << OUTPATH << ".png";
+  out_file << OUTPATH << "msw_vs_msl.png";
   c1.SaveAs(out_file.str().c_str());
 }
