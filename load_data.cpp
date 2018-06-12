@@ -310,7 +310,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1F* HI
   return 1;
 }
 
-void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1F* HIST){
+void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1F* HIST, TH2F* HIST2D = 0){
   /*Load sample data that is easily and quickly repeatable for testing purposes.
    * Data hist is filled from the function 5x with ~1000 counts.
    * Bkg hist is filled from the function 5x with ~3000 counts.
@@ -334,6 +334,16 @@ void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1F* HIS
       HIST->Fill(gRandom->Gaus(1, .1));
     }
   }
+  if(HIST2D){
+    for(int i = 1; i <= NBIN; i++){
+      double nEvents = HIST->GetBinContent(i);
+      for(int j = 0; j < nEvents; j++){
+        double x = gRandom->Uniform(HIST->GetBinCenter(i) - .5*HIST->GetBinWidth(i), HIST->GetBinCenter(i) + .5*HIST->GetBinWidth(i));
+        double y = gRandom->Gaus(1, .15);
+        HIST2D->Fill(x,y);
+      }
+    }
+  }
 }
 
 void loadData(indices_t ins, args_t args, double *alpha, TH1F* DAT_HIST, TH1F* BKG_HIST, TH1F* SRC_HIST, TH2F* DAT_2HIST, TH2F* BKG_2HIST){
@@ -344,14 +354,15 @@ void loadData(indices_t ins, args_t args, double *alpha, TH1F* DAT_HIST, TH1F* B
     std::cout << "Histograms loaded from Toy format." << std::endl;
   }
   else if(args.format == Format_t::Vegas){
-    *alpha = loadData_vegas(ins, args, "data", DAT_HIST, DAT_2HIST) / loadData_vegas(ins, args, "bkg", BKG_HIST, BKG_2HIST);
+    loadData_vegas(ins, args, "data", DAT_HIST, DAT_2HIST);
+    loadData_vegas(ins, args, "bkg", BKG_HIST, BKG_2HIST);
     *alpha = DAT_HIST->Integral() / BKG_HIST->Integral(); //TODO
     loadsrc_csv(ins, args, SRC_HIST);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
   }
   else if(args.format == Format_t::Sample){
-    loadData_sample(ins, args, "data", DAT_HIST);
-    loadData_sample(ins, args, "bkg", BKG_HIST);
+    loadData_sample(ins, args, "data", DAT_HIST, DAT_2HIST);
+    loadData_sample(ins, args, "bkg", BKG_HIST, BKG_2HIST);
     loadData_sample(ins, args, "src", SRC_HIST);
     *alpha = 3/5;
     std::cout << "Histograms loaded from Sample format." << std::endl;
@@ -360,4 +371,5 @@ void loadData(indices_t ins, args_t args, double *alpha, TH1F* DAT_HIST, TH1F* B
     std::cerr << "No valid data format specified." << std::endl;
     throw 999;
   }
+
 }

@@ -27,6 +27,7 @@ void calculate_errors(double Pb, double Ps, double sigma_Pb, double sigma_Ps, in
 void print_cuts(std::string action, cuts_t* cuts);
 void fit_manual_bin();
 void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args);
+void plot_msw_vs_msl(TH2F* dat_2hist, TH2F* bkg_2hist);
 
 
 //Li Ma Significance Calculation
@@ -493,10 +494,10 @@ void run(int argc, char* argv[]){
             DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
             BKG_HIST = new TH1F("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
             SRC_HIST = new TH1F("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
-            TH2F* dat_2hist, bkg_2hist;
+            TH2F *dat_2hist, *bkg_2hist;
             if(args->graphics & 4){
-              TH2F* dat_2hist = new TH2F("Data_MSWvsMSL", "Data MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
-              TH2F* bkg_2hist = new TH2F("Bkg_MSWvsMSL", "Bkg MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              dat_2hist = new TH2F("Data_MSWvsMSL", "Data MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              bkg_2hist = new TH2F("Bkg_MSWvsMSL", "Bkg MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
             }
             loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST, dat_2hist, bkg_2hist);
 
@@ -506,6 +507,7 @@ void run(int argc, char* argv[]){
             if(args->output & 2) printRawData();
             if(args->hist & 1) histogram_raw_data(indices);
             if(args->hist & 2) histogram_fit_data(fracs, indices);
+            if(args->graphics & 4) plot_msw_vs_msl(dat_2hist, bkg_2hist);
           }
         }
       }
@@ -1362,11 +1364,28 @@ void plot_msw_vs_msl(TH2F* dat_2hist, TH2F* bkg_2hist){
   dat_2hist->GetYaxis()->SetTitle("MSL");
   bkg_2hist->GetXaxis()->SetTitle("MSW");
   bkg_2hist->GetYaxis()->SetTitle("MSL");
+  double dat, bkg;
+  dat = dat_2hist->GetMaximum();
+  bkg = bkg_2hist->GetMaximum();
+  dat_2hist->SetMaximum(dat > bkg ? dat : bkg);
+  bkg_2hist->SetMaximum(dat > bkg ? dat : bkg);
+  dat = dat_2hist->GetMinimum();
+  bkg = bkg_2hist->GetMinimum();
+  dat_2hist->SetMinimum(dat < bkg ? dat : bkg);
+  bkg_2hist->SetMinimum(dat < bkg ? dat : bkg);
 
+  gStyle->SetPalette(kBlackBody);
+  gStyle->SetOptStat(0);
 
-
-
-  TCanvas c1("c1", "c1", 1600, 1600);
+  TCanvas c1("c1", "c1", 2400, 1200);
   c1.Divide(2,1);
-  c1->cd(1);
+  c1.cd(1);
+  dat_2hist->Draw("COLZ");
+
+  c1.cd(2);
+  bkg_2hist->Draw("COLZ");
+
+  std::stringstream out_file;
+  out_file << OUTPATH << "msw_vs_msl.png";
+  c1.SaveAs(out_file.str().c_str());
 }
