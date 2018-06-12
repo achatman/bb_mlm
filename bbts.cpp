@@ -1347,6 +1347,13 @@ void plot_msw_vs_msl(){
   DAT_2HIST->SetMinimum(dat < bkg ? dat : bkg);
   BKG_2HIST->SetMinimum(dat < bkg ? dat : bkg);
 
+  std::stringstream title;
+  title << dat_2hist->GetTitle() << " " << OUTPATH;
+  dat_2hist->SetTitle(title.str().c_str());
+  title.str("");
+  title << bkg_2hist->GetTitle() << " " << OUTPATH;
+  bkg_2hist->SetTitle(title.str().c_str());
+
   gStyle->SetPalette(kBlackBody);
   gStyle->SetOptStat(0);
 
@@ -1359,6 +1366,6 @@ void plot_msw_vs_msl(){
   BKG_2HIST->Draw("COLZ");
 
   std::stringstream out_file;
-  out_file << OUTPATH << "msw_vs_msl.png";
+  out_file << "MSWMSL_" << OUTPATH << ".png";
   c1.SaveAs(out_file.str().c_str());
 }
