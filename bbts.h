@@ -65,13 +65,15 @@ struct args_t {
   output(0),
   verbosity(-1),
   bin_vars(7),
-  graphics(0) {}
+  graphics(0),
+  bidir(0) {}
   Format_t format;
   int hist;
   int output;
   int verbosity;
   int bin_vars;
   int graphics;
+  bool bidir;
   std::string op_info;
 };
 struct indices_t{
@@ -93,6 +95,13 @@ struct cuts_t{
   int src;
   int passed;
   int read;
+};
+struct hists_t{
+  TH1F* dat_hist;
+  TH1F* bkg_hist;
+  TH1F* src_hist;
+  TH2F* dat_2hist;
+  TH2F* bkg_2hist;
 };
 
 
