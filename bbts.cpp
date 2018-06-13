@@ -22,7 +22,7 @@ int parse_command_line(int argc, char* argv[], args_t* args);
 void prepare_std_output_files(args_t args);
 int optional_binning(indices_t indices, args_t args);
 //output function declarations
-void printRawData();
+void printRawData(hists_t hists);
 void histogram_raw_data(indices_t ins);
 void histogram_fit_data(double fracs[6], indices_t ins, args_t *args);
 void calculate_errors(double Pb, double Ps, double sigma_Pb, double sigma_Ps, indices_t ins, double alpha);
@@ -722,7 +722,8 @@ int main(int argc, char* argv[]){
             double alpha = 1;
             loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST);
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
-            if(args->output & 2) printRawData();
+            hists_t hist_pointers = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST};
+            if(args->output & 2) printRawData(hist_pointers);
             if(args->hist & 1) histogram_raw_data(indices);
             if(args->graphics & 4) plot_msw_vs_msl();
 
@@ -933,17 +934,17 @@ int optional_binning(indices_t indices, args_t args){
 }
 
 //Output
-void printRawData(){
-  if(!(DAT_HIST->Integral() + BKG_HIST->Integral())) return;
+void printRawData(hists_t hists){
+  if(!(hists.dat_hist->Integral() + hists.dat_hist->Integral())) return;
   std::stringstream path;
   path << "raw_data_" << OUTPATH << ".csv";
   std::ofstream f(path.str().c_str());
   f << "MSW, di, bi, si" << std::endl;
   for(int i = 1; i <= NBIN; i++){
-    f << DAT_HIST->GetBinCenter(i) << ","
-      << DAT_HIST->GetBinContent(i) << ","
-      << BKG_HIST->GetBinContent(i) << ","
-      << SRC_HIST->GetBinContent(i) << std::endl;
+    f << hists.dat_hist->GetBinCenter(i) << ","
+      << hists.dat_hist->GetBinContent(i) << ","
+      << hists.bkg_hist->GetBinContent(i) << ","
+      << hists.src_hist->GetBinContent(i) << std::endl;
   }
 }
 
@@ -1242,59 +1243,6 @@ void print_cuts(std::string action, cuts_t* cuts){
       << PRINTSPACE << SRC_HIST->Integral() << std::endl;
     f.close();
   }
-}
-
-void fit_manual_bin(){
-  //load data from input_data.csv
-  //data must be in a csv file of form di, bi, si
-  TH1::SetDefaultSumw2();
-  DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
-  BKG_HIST =  new TH1F("BkgHist",  "BKG", NBIN, MSWLOW, MSWHIGH);
-  SRC_HIST =  new TH1F("SrcHist" , "SRC" ,NBIN, MSWLOW, MSWHIGH);
-
-  std::string line;
-  std::vector<std::string> line_fields;
-  std::ifstream input("input_data.csv");
-  for(int i = 0; i < NBIN; i++){
-    std::getline(input, line);
-    boost::split(line_fields, line, boost::is_any_of(","));
-    DAT_HIST->Sumw2(false);
-    DAT_HIST->SetBinContent(i+1, std::atof(line_fields.at(0).c_str()));
-    DAT_HIST->Sumw2(true);
-    BKG_HIST->Sumw2(false);
-    BKG_HIST->SetBinContent(i+1, std::atof(line_fields.at(1).c_str()));
-    BKG_HIST->Sumw2(true);
-    SRC_HIST->Sumw2(false);
-    SRC_HIST->SetBinContent(i+1, std::atof(line_fields.at(2).c_str()));
-    SRC_HIST->Sumw2(true);
-    line_fields.clear();
-  }
-
-  //Make indices and args structs and OUTPATH
-  //these are manually set; indices and OUTPATH are cosmetic
-  args_t args;
-  args.hist = 3;
-  args.output = 11;
-  args.bin_vars = 31;
-  indices_t ins;
-  ins.za = 1;
-  ins.e = 3;
-  ins.tel = 0;
-  ins.az = 0;
-  ins.off = 2;
-  OUTPATH = "Match_only78 ZA1E2T3A0O5";
-
-  //perform fit
-  fit(ins, args, 1);
-  printRawData();
-  histogram_raw_data(ins);
-
-  //clean up
-  delete DAT_HIST;
-  delete BKG_HIST;
-  delete SRC_HIST;
-
-
 }
 
 void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args){
