@@ -1316,11 +1316,11 @@ void plot_msw_vs_msl(){
   BKG_2HIST->SetMinimum(dat < bkg ? dat : bkg);
   
   std::stringstream title;
-  title << dat_2hist->GetTitle() << " " << OUTPATH;
-  dat_2hist->SetTitle(title.str().c_str());
+  title << DAT_2HIST->GetTitle() << " " << OUTPATH;
+  DAT_2HIST->SetTitle(title.str().c_str());
   title.str("");
-  title << bkg_2hist->GetTitle() << " " << OUTPATH;
-  bkg_2hist->SetTitle(title.str().c_str());
+  title << BKG_2HIST->GetTitle() << " " << OUTPATH;
+  BKG_2HIST->SetTitle(title.str().c_str());
 
   gStyle->SetPalette(kBlackBody);
   gStyle->SetOptStat(0);
