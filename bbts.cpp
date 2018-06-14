@@ -3,11 +3,11 @@
 
 std::string OUTPATH;
 
-TH1F* DAT_HIST;
-TH1F* BKG_HIST;
-TH1F* SRC_HIST;
-TH2F* DAT_2HIST;
-TH2F* BKG_2HIST;
+TH1D* DAT_HIST;
+TH1D* BKG_HIST;
+TH1D* SRC_HIST;
+TH2D* DAT_2HIST;
+TH2D* BKG_2HIST;
 
 //Bin boundaries
 double ZABINS[] = {25.46,32.59,37.57,42.56,47.55};
@@ -48,7 +48,7 @@ double lima_sig(double Pb, double Ps){
   return S;
 }
 
-double nosrc_noBB(double Pb, bool print = false, TH1F* F = 0){
+double nosrc_noBB(double Pb, bool print = false, TH1D* F = 0){
   int i;
   double pb;
   double di, bi, fi;
@@ -107,7 +107,7 @@ double nosrc_noBB(double Pb, bool print = false, TH1F* F = 0){
   return -lnL;
 }
 
-double src_noBB(double Pb, double Ps, bool print = false, TH1F* F = 0){
+double src_noBB(double Pb, double Ps, bool print = false, TH1D* F = 0){
   int i;
   double pb, ps;
   double di, bi, si, fi;
@@ -174,7 +174,7 @@ double src_noBB(double Pb, double Ps, bool print = false, TH1F* F = 0){
   return -lnL;
 }
 
-double nosrc_BB(double Pb, bool print = false, TH1F* F = 0, TH1F* B = 0){
+double nosrc_BB(double Pb, bool print = false, TH1D* F = 0, TH1D* B = 0){
   int i;
   double pb;
   double di, bi, Bi, fi;
@@ -256,7 +256,7 @@ double nosrc_BB(double Pb, bool print = false, TH1F* F = 0, TH1F* B = 0){
   return -lnL;
 }
 
-double src_BB(double Pb, double Ps, bool print = false, TH1F* F = 0, TH1F* B = 0){
+double src_BB(double Pb, double Ps, bool print = false, TH1D* F = 0, TH1D* B = 0){
   int i;
   double pb, ps;
   double di, bi, si, Bi, fi;
@@ -489,8 +489,8 @@ void bidirectional(args_t *args, indices_t indices, double alpha){
 
   //Plot Forward Fit
   c1->cd(1);
-  TH1F* dat_fit_forward = new TH1F("DFit_For", "Forward", NBIN, MSWLOW, MSWHIGH);
-  TH1F* bkg_fit_forward = new TH1F("BFit_For", "Forward", NBIN, MSWLOW, MSWHIGH);
+  TH1D* dat_fit_forward = new TH1D("DFit_For", "Forward", NBIN, MSWLOW, MSWHIGH);
+  TH1D* bkg_fit_forward = new TH1D("BFit_For", "Forward", NBIN, MSWLOW, MSWHIGH);
   dat_fit_forward->SetLineColor(4);
   bkg_fit_forward->SetLineColor(6);
   dat_fit_forward->SetStats(false);
@@ -515,7 +515,7 @@ void bidirectional(args_t *args, indices_t indices, double alpha){
   double ts1 = -2*(src_BB(fracs_for[2], fracs_for[3]) - nosrc_BB(fracs_for[5]));
 
   //Run Backward Fit
-  TH1F* temp = DAT_HIST;
+  TH1D* temp = DAT_HIST;
   DAT_HIST = BKG_HIST;
   BKG_HIST = temp;
   double fracs_back[6];
@@ -523,8 +523,8 @@ void bidirectional(args_t *args, indices_t indices, double alpha){
 
   //Plot Backward Fit
   c1->cd(4);
-  TH1F* dat_fit_back = new TH1F("DFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
-  TH1F* bkg_fit_back = new TH1F("BFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
+  TH1D* dat_fit_back = new TH1D("DFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
+  TH1D* bkg_fit_back = new TH1D("BFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
   dat_fit_back->SetLineColor(4);
   bkg_fit_back->SetLineColor(6);
   dat_fit_back->SetStats(false);
@@ -547,8 +547,8 @@ void bidirectional(args_t *args, indices_t indices, double alpha){
 
   //Plot Raw Comp & Pulls
   c1->cd(2);
-  TH1F* dat1 = new TH1F(*BKG_HIST);
-  TH1F* dat2 = new TH1F(*DAT_HIST);
+  TH1D* dat1 = new TH1D(*BKG_HIST);
+  TH1D* dat2 = new TH1D(*DAT_HIST);
   dat1->SetLineColor(1);
   dat2->SetLineColor(2);
   dat1->SetTitle("Raw Comparison");
@@ -564,8 +564,8 @@ void bidirectional(args_t *args, indices_t indices, double alpha){
 
   //Plot Fit Comp & Pulls
   c1->cd(5);
-  TH1F* fit1 = new TH1F(*dat_fit_forward);
-  TH1F* fit2 = new TH1F(*dat_fit_back);
+  TH1D* fit1 = new TH1D(*dat_fit_forward);
+  TH1D* fit2 = new TH1D(*dat_fit_back);
   fit1->SetLineColor(1);
   fit2->SetLineColor(2);
   fit1->SetTitle("Fit Comparison");
@@ -712,12 +712,12 @@ int main(int argc, char* argv[]){
           for(indices.off = oi; indices.off < 8; indices.off++){
             if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
-            DAT_HIST = new TH1F("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
-            BKG_HIST = new TH1F("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
-            SRC_HIST = new TH1F("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
+            DAT_HIST = new TH1D("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
+            BKG_HIST = new TH1D("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
+            SRC_HIST = new TH1D("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
             if(args->graphics & 4){
-              DAT_2HIST = new TH2F("Data_MSWvsMSL", "Data MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
-              BKG_2HIST = new TH2F("Bkg_MSWvsMSL", "Bkg MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
             }
             double alpha = 1;
             loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST);
@@ -954,8 +954,8 @@ void histogram_raw_data(indices_t ins){
   filepath << "HIST_RAW_" << OUTPATH << ".png";
 
   //Copy the global histograms so that we can edit them
-  TH1F* dathist = new TH1F(*DAT_HIST);
-  TH1F* bkghist = new TH1F(*BKG_HIST);
+  TH1D* dathist = new TH1D(*DAT_HIST);
+  TH1D* bkghist = new TH1D(*BKG_HIST);
 
   //Set up
   TCanvas *c1 = new TCanvas("","",1200,1200);
@@ -1000,16 +1000,16 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args){
   filepath << "HIST_FIT_" << OUTPATH << ".png";
 
   //Copy the global histograms so that we can edit them
-  TH1F* dathist = new TH1F(*DAT_HIST);
-  TH1F* bkghist = new TH1F(*BKG_HIST);
-  TH1F* srchist = new TH1F(*SRC_HIST);
+  TH1D* dathist = new TH1D(*DAT_HIST);
+  TH1D* bkghist = new TH1D(*BKG_HIST);
+  TH1D* srchist = new TH1D(*SRC_HIST);
   bkghist->Scale(DAT_HIST->Integral() / BKG_HIST->Integral());
   srchist->Scale(DAT_HIST->Integral() / SRC_HIST->Integral());
 
   //Canvas set up
-  TH1F* F0 = new TH1F("F0Hist", "Std Fit", NBIN, MSWLOW, MSWHIGH);
-  TH1F* F1 = new TH1F("F1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
-  TH1F* B1 = new TH1F("B1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
+  TH1D* F0 = new TH1D("F0Hist", "Std Fit", NBIN, MSWLOW, MSWHIGH);
+  TH1D* F1 = new TH1D("F1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
+  TH1D* B1 = new TH1D("B1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
   TCanvas *c1 = new TCanvas("",OUTPATH.c_str(),1600,1600);
   c1->Divide(2,2);
 
@@ -1275,7 +1275,7 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
 
   gStyle->SetOptStat(0);
   TCanvas *c1 = new TCanvas("c1","c1", 1200,800);
-  TH2F *map = new TH2F("map", title.str().c_str(), xbins, xmin, xmax, ybins, ymin, ymax);
+  TH2D *map = new TH2D("map", title.str().c_str(), xbins, xmin, xmax, ybins, ymin, ymax);
   TAxis *xax = map->GetXaxis();
   TAxis *yax = map->GetYaxis();
   xax->SetTitle("Pb");
@@ -1314,7 +1314,7 @@ void plot_msw_vs_msl(){
   bkg = BKG_2HIST->GetMinimum();
   DAT_2HIST->SetMinimum(dat < bkg ? dat : bkg);
   BKG_2HIST->SetMinimum(dat < bkg ? dat : bkg);
-  
+
   std::stringstream title;
   title << DAT_2HIST->GetTitle() << " " << OUTPATH;
   DAT_2HIST->SetTitle(title.str().c_str());

@@ -2,7 +2,7 @@
 #define BBTS_H
 
 //ROOT Includes
-#include "TH1F.h"
+#include "TH1D.h"
 #include "TFile.h"
 #include "Riostream.h"
 #include "TFractionFitter.h"
@@ -52,12 +52,6 @@ extern int TBINS[];
 extern double AZBINS[];
 extern double OBINS[];
 
-//Histograms
-/*
-extern TH1F* DAT_HIST;
-extern TH1F* BKG_HIST;
-extern TH1F* SRC_HIST;
-*/
 enum class Format_t{Toy, Csv, Vegas, Sample};
 struct args_t {
   args_t() : format(Format_t::Toy),
@@ -97,11 +91,11 @@ struct cuts_t{
   int read;
 };
 struct hists_t{
-  TH1F* dat_hist;
-  TH1F* bkg_hist;
-  TH1F* src_hist;
-  TH2F* dat_2hist;
-  TH2F* bkg_2hist;
+  TH1D* dat_hist;
+  TH1D* bkg_hist;
+  TH1D* src_hist;
+  TH2D* dat_2hist;
+  TH2D* bkg_2hist;
 };
 
 

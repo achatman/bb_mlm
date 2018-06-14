@@ -2,6 +2,6 @@
 #define LOAD_DATA_H
 #include "bbts.h"
 
-void loadData(indices_t ins, args_t args, double *alpha, TH1F* DAT_HIST, TH1F* BKG_HIST, TH1F* SRC_HIST, TH2F* DAT_2HIST=0, TH2F* BKG_2HIST=0);
+void loadData(indices_t ins, args_t args, double *alpha, TH1D* DAT_HIST, TH1D* BKG_HIST, TH1D* SRC_HIST, TH2D* DAT_2HIST=0, TH2D* BKG_2HIST=0);
 
 #endif

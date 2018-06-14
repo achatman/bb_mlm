@@ -1,6 +1,6 @@
 #include "load_data.h"
 
-void loadsrc_csv(indices_t ins, args_t args, TH1F* SRC_HIST){
+void loadsrc_csv(indices_t ins, args_t args, TH1D* SRC_HIST){
   std::cout << "Loading Source" << std::endl;
   timestamp;
   std::ifstream srcif("src.list");
@@ -41,7 +41,7 @@ void loadsrc_csv(indices_t ins, args_t args, TH1F* SRC_HIST){
   if(args.output & 8) print_cuts("src", 0);
 }
 
-double loadData_toy(indices_t ins, args_t args, std::string pathbase, TH1F* HIST){
+double loadData_toy(indices_t ins, args_t args, std::string pathbase, TH1D* HIST){
   std::string line;
   TFile *f;
   std::stringstream sstream;
@@ -154,7 +154,7 @@ double loadData_toy(indices_t ins, args_t args, std::string pathbase, TH1F* HIST
   return livetime;
 }
 
-double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1F* HIST, TH2F* HIST2D = 0){
+double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
   std::stringstream excl_file;
   excl_file << pathbase << "_src.txt";
   //Check for source exclusion file
@@ -310,7 +310,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1F* HI
   return 1;
 }
 
-void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1F* HIST, TH2F* HIST2D = 0){
+void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
   /*Load sample data that is easily and quickly repeatable for testing purposes.
    * Data hist is filled from the function 5x with ~1000 counts.
    * Bkg hist is filled from the function 5x with ~3000 counts.
@@ -346,7 +346,7 @@ void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1F* HIS
   }
 }
 
-void loadData(indices_t ins, args_t args, double *alpha, TH1F* DAT_HIST, TH1F* BKG_HIST, TH1F* SRC_HIST, TH2F* DAT_2HIST, TH2F* BKG_2HIST){
+void loadData(indices_t ins, args_t args, double *alpha, TH1D* DAT_HIST, TH1D* BKG_HIST, TH1D* SRC_HIST, TH2D* DAT_2HIST, TH2D* BKG_2HIST){
 
   if(args.format == Format_t::Toy){
     *alpha = loadData_toy(ins, args, "data", DAT_HIST) / loadData_toy(ins, args, "bkg", BKG_HIST);
