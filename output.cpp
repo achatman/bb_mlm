@@ -3,7 +3,7 @@
 void printRawData(hists_t hists){
   if(!(hists.dat_hist->Integral() + hists.dat_hist->Integral())) return;
   std::stringstream path;
-  path << "raw_data_" << hists.outpath << ".csv";
+  path << "RawData_" << hists.outpath << ".csv";
   std::ofstream f(path.str().c_str());
   f << "MSW, di, bi, si" << std::endl;
   for(int i = 1; i <= NBIN; i++){
@@ -222,7 +222,7 @@ void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_
   double sigma_P_B = TMath::Abs(P_B) * TMath::Sqrt( TMath::Power(sigma_B / B, 2) + TMath::Power(sigma_N_D / N_D, 2) );
 
   std::stringstream filename;
-  filename << "errors" << hists.outpath << ".csv";
+  filename << "Errors_" << hists.outpath << ".csv";
   std::ofstream f(filename.str().c_str());
   f << "Minuit Values:" << std::endl
   << "Ps: " << Ps_m << std::endl
@@ -255,7 +255,7 @@ void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_
 
 void print_cuts(std::string action, cuts_t* cuts, std::string outpath){
   if(!action.compare("reset")){
-    std::ofstream f("cuts_data.txt");
+    std::ofstream f("Cuts_data.txt");
     f << PRINTSPACE << "Bin"
     << PRINTSPACE << "passed"
     << PRINTSPACE << "read"
@@ -267,7 +267,7 @@ void print_cuts(std::string action, cuts_t* cuts, std::string outpath){
     << PRINTSPACE << "azimuth"
     << PRINTSPACE << "offset" << std::endl;
     f.close();
-    f.open("cuts_bkg.txt");
+    f.open("Cuts_bkg.txt");
     f << PRINTSPACE << "Bin"
     << PRINTSPACE << "passed"
     << PRINTSPACE << "read"
@@ -282,7 +282,7 @@ void print_cuts(std::string action, cuts_t* cuts, std::string outpath){
   }
   else if(!action.compare("data") || !action.compare("bkg")){
     std::stringstream fname;
-    fname << "cuts_" << action << ".txt";
+    fname << "Cuts_" << action << ".txt";
     std::ofstream f(fname.str().c_str(), std::ios::out | std::ios::app);
     f << PRINTSPACE << outpath
     << PRINTSPACE << cuts->passed
@@ -318,13 +318,7 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
   }
 
   std::stringstream title;
-  title << title_tag
-  << " Likelihood ";
-  if(args.bin_vars & 1) title << "ZA"<< ins.za;
-  if(args.bin_vars & 2) title << "E" << ins.e;
-  if(args.bin_vars & 4) title << "T" << ins.tel;
-  if(args.bin_vars & 8) title << "A" << ins.az;
-  if(args.bin_vars & 16) title << "O" << ins.off;
+  title << "Likelihood " << title_tag << " " << hists.outpath;
 
   gStyle->SetOptStat(0);
   TCanvas *c1 = new TCanvas("c1","c1", 1200,800);

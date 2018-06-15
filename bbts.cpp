@@ -49,7 +49,7 @@ double nosrc_noBB(double Pb, bool print, TH1D* F){
   pb = Pb * DAT_HIST->Integral() / BKG_HIST->Integral();
   if(print){
     std::stringstream path;
-    path << "BIN_src0_bb0_" << OUTPATH << ".txt";
+    path << "Bin_NoSrc_Std_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
     f << "Bin: " << OUTPATH << std::endl;
@@ -109,7 +109,7 @@ double src_noBB(double Pb, double Ps, bool print, TH1D* F){
   ps = Ps * DAT_HIST->Integral() / SRC_HIST->Integral();
   if(print){
     std::stringstream path;
-    path << "BIN_src1_bb0_" << OUTPATH << ".txt";
+    path << "Bin_Src_Std_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
     f << "Bin: " << OUTPATH << std::endl;
@@ -176,7 +176,7 @@ double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
   pb = Pb * DAT_HIST->Integral() / BKG_HIST->Integral();
   if(print){
     std::stringstream path;
-    path << "BIN_src0_bb1_" << OUTPATH << ".txt";
+    path << "Bin_NoSrc_BB_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
     f << "Bin: " << OUTPATH << std::endl;
@@ -259,7 +259,7 @@ double src_BB(double Pb, double Ps, bool print, TH1D* F, TH1D* B){
   ps = Ps * DAT_HIST->Integral() / SRC_HIST->Integral();
   if(print){
     std::stringstream path;
-    path << "BIN_src1_bb1_" << OUTPATH << ".txt";
+    path << "Bin_Src_BB_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
     f << "Bin: " << OUTPATH << std::endl;
