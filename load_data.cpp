@@ -1,4 +1,7 @@
 #include "load_data.h"
+#include "output.h"
+
+std::string OUTSTR;
 
 void loadsrc_csv(indices_t ins, args_t args, TH1D* SRC_HIST){
   std::cout << "Loading Source" << std::endl;
@@ -37,8 +40,6 @@ void loadsrc_csv(indices_t ins, args_t args, TH1D* SRC_HIST){
   srcdatin.close();
   std::cout << SRC_HIST->Integral()
   << " events loaded for source." << std::endl;
-
-  if(args.output & 8) print_cuts("src", 0);
 }
 
 double loadData_toy(indices_t ins, args_t args, std::string pathbase, TH1D* HIST){
@@ -148,7 +149,7 @@ double loadData_toy(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
 
 
   if(args.output & 8){
-    print_cuts(pathbase, &cuts);
+    print_cuts(pathbase, &cuts, OUTSTR);
   }
   std::cout << pathbase << " Overflow: " << overflow << std::endl;
   return livetime;
@@ -302,7 +303,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
   std::cout << cuts.az << " failed az cut." << std::endl;
   std::cout << cuts.off << " failed off cut." << std::endl;
 
-  if(args.output & 8) print_cuts(pathbase, &cuts);
+  if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
 
 
   std::cout << pathbase << " Offset Overflow: " << overflow << std::endl;
@@ -346,24 +347,24 @@ void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIS
   }
 }
 
-void loadData(indices_t ins, args_t args, double *alpha, TH1D* DAT_HIST, TH1D* BKG_HIST, TH1D* SRC_HIST, TH2D* DAT_2HIST, TH2D* BKG_2HIST){
-
+void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
+  OUTSTR = hists.outpath;
   if(args.format == Format_t::Toy){
-    *alpha = loadData_toy(ins, args, "data", DAT_HIST) / loadData_toy(ins, args, "bkg", BKG_HIST);
-    loadsrc_csv(ins, args, SRC_HIST);
+    *alpha = loadData_toy(ins, args, "data", hists.dat_hist) / loadData_toy(ins, args, "bkg", hists.bkg_hist);
+    loadsrc_csv(ins, args, hists.src_hist);
     std::cout << "Histograms loaded from Toy format." << std::endl;
   }
   else if(args.format == Format_t::Vegas){
-    loadData_vegas(ins, args, "data", DAT_HIST, DAT_2HIST);
-    loadData_vegas(ins, args, "bkg", BKG_HIST, BKG_2HIST);
-    *alpha = DAT_HIST->Integral() / BKG_HIST->Integral(); //TODO
-    loadsrc_csv(ins, args, SRC_HIST);
+    loadData_vegas(ins, args, "data", hists.dat_hist, hists.dat_2hist);
+    loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
+    *alpha = hists.dat_hist->Integral() / hists.bkg_hist->Integral(); //TODO
+    loadsrc_csv(ins, args, hists.src_hist);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
   }
   else if(args.format == Format_t::Sample){
-    loadData_sample(ins, args, "data", DAT_HIST, DAT_2HIST);
-    loadData_sample(ins, args, "bkg", BKG_HIST, BKG_2HIST);
-    loadData_sample(ins, args, "src", SRC_HIST);
+    loadData_sample(ins, args, "data", hists.dat_hist, hists.dat_2hist);
+    loadData_sample(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
+    loadData_sample(ins, args, "src", hists.src_hist);
     *alpha = 3/5;
     std::cout << "Histograms loaded from Sample format." << std::endl;
   }
