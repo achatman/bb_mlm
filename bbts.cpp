@@ -23,13 +23,12 @@ void prepare_std_output_files(args_t args);
 int optional_binning(indices_t indices, args_t args);
 //output function declarations
 void printRawData(hists_t hists);
-void histogram_raw_data(indices_t ins);
-void histogram_fit_data(double fracs[6], indices_t ins, args_t *args);
-void calculate_errors(double Pb, double Ps, double sigma_Pb, double sigma_Ps, indices_t ins, double alpha);
-void print_cuts(std::string action, cuts_t* cuts);
-void fit_manual_bin();
-void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args);
-void plot_msw_vs_msl();
+void histogram_raw_data(indices_t ins, hists_t hists);
+void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hists);
+void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_Ps_m, indices_t ins, double alpha, hists_t hists);
+void print_cuts(std::string action, cuts_t* cuts, hists_t hists);
+void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args, hists_t hists);
+void plot_msw_vs_msl(hists_t hists);
 
 
 //Li Ma Significance Calculation
@@ -710,7 +709,6 @@ int main(int argc, char* argv[]){
       for(indices.tel = ti; indices.tel < 2; indices.tel++){
         for(indices.az = ai; indices.az < 8; indices.az++){
           for(indices.off = oi; indices.off < 8; indices.off++){
-            if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
             DAT_HIST = new TH1D("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
             BKG_HIST = new TH1D("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
@@ -719,10 +717,11 @@ int main(int argc, char* argv[]){
               DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
               BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
             }
+            hists_t hist_pointers = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, ""};
+            if(optional_binning(indices, *args, &hists)) continue;
             double alpha = 1;
             loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST);
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
-            hists_t hist_pointers = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST};
             if(args->output & 2) printRawData(hist_pointers);
             if(args->hist & 1) histogram_raw_data(indices);
             if(args->graphics & 4) plot_msw_vs_msl();
@@ -905,7 +904,7 @@ void prepare_std_output_files(args_t args){
   if(args.output & 8) print_cuts("reset", 0);
 }
 
-int optional_binning(indices_t indices, args_t args){
+int optional_binning(indices_t indices, args_t args, hists_t *hists){
   std::stringstream path;
   int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0; //TODO
   if(!(args.bin_vars & 1)){
@@ -929,7 +928,7 @@ int optional_binning(indices_t indices, args_t args){
   }
   else path << "O" << indices.off;
   std::cout << path.str() << std::endl;
-  OUTPATH = path.str();
+  hists->outpath = path.str();
   return 0;
 }
 
@@ -937,7 +936,7 @@ int optional_binning(indices_t indices, args_t args){
 void printRawData(hists_t hists){
   if(!(hists.dat_hist->Integral() + hists.dat_hist->Integral())) return;
   std::stringstream path;
-  path << "raw_data_" << OUTPATH << ".csv";
+  path << "raw_data_" << hists.outpath << ".csv";
   std::ofstream f(path.str().c_str());
   f << "MSW, di, bi, si" << std::endl;
   for(int i = 1; i <= NBIN; i++){
@@ -948,14 +947,14 @@ void printRawData(hists_t hists){
   }
 }
 
-void histogram_raw_data(indices_t ins){
-  if(!(DAT_HIST->Integral() + BKG_HIST->Integral())) return;
+void histogram_raw_data(indices_t ins, hists_t hists){
+  if(!(hists.dat_hist->Integral() + hists.bkg_hist->Integral())) return;
   std::stringstream filepath;
-  filepath << "HIST_RAW_" << OUTPATH << ".png";
+  filepath << "HIST_RAW_" << hists->outpath << ".png";
 
   //Copy the global histograms so that we can edit them
-  TH1D* dathist = new TH1D(*DAT_HIST);
-  TH1D* bkghist = new TH1D(*BKG_HIST);
+  TH1D* dathist = new TH1D(*hists.dat_hist);
+  TH1D* bkghist = new TH1D(*hists.bkg_hist);
 
   //Set up
   TCanvas *c1 = new TCanvas("","",1200,1200);
@@ -966,7 +965,7 @@ void histogram_raw_data(indices_t ins){
   dathist->SetStats(false);
   bkghist->SetStats(false);
 
-  dathist->SetTitle(OUTPATH.c_str());
+  dathist->SetTitle(hists.outpath.c_str());
 
   bkghist->Scale(DAT_HIST->Integral() / BKG_HIST->Integral());
 
@@ -994,23 +993,23 @@ void histogram_raw_data(indices_t ins){
   delete legend;
 }
 
-void histogram_fit_data(double fracs[6], indices_t ins, args_t *args){
-  if(!(DAT_HIST->Integral() + BKG_HIST->Integral())) return;
+void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hists){
+  if(!(hists.dat_hist->Integral() + hists.bkg_hist->Integral())) return;
   std::stringstream filepath;
-  filepath << "HIST_FIT_" << OUTPATH << ".png";
+  filepath << "HIST_FIT_" << hists.outpath << ".png";
 
   //Copy the global histograms so that we can edit them
-  TH1D* dathist = new TH1D(*DAT_HIST);
-  TH1D* bkghist = new TH1D(*BKG_HIST);
-  TH1D* srchist = new TH1D(*SRC_HIST);
-  bkghist->Scale(DAT_HIST->Integral() / BKG_HIST->Integral());
-  srchist->Scale(DAT_HIST->Integral() / SRC_HIST->Integral());
+  TH1D* dathist = new TH1D(*hists.dat_hist);
+  TH1D* bkghist = new TH1D(*hists.bkg_hist);
+  TH1D* srchist = new TH1D(*hists.src_hist);
+  bkghist->Scale(hists.dat_hist->Integral() / hists.bkg_hist->Integral());
+  srchist->Scale(hists.dat_hist->Integral() / hists.src_hist->Integral());
 
   //Canvas set up
   TH1D* F0 = new TH1D("F0Hist", "Std Fit", NBIN, MSWLOW, MSWHIGH);
   TH1D* F1 = new TH1D("F1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
   TH1D* B1 = new TH1D("B1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
-  TCanvas *c1 = new TCanvas("",OUTPATH.c_str(),1600,1600);
+  TCanvas *c1 = new TCanvas("",hists.outpath.c_str(),1600,1600);
   c1->Divide(2,2);
 
   dathist->SetLineColor(4);
@@ -1057,7 +1056,7 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args){
   //Draw BB Src
   srchist->Scale(fracs[3]);
   src_BB(fracs[2], fracs[3], false, F1, B1);
-  B1->Scale(DAT_HIST->Integral() / BKG_HIST->Integral());
+  B1->Scale(hists.dat_hist->Integral() / hists.bkg_hist->Integral());
   B1->Scale(fracs[2]);
   c1->cd(2);
   F1->Draw("hist");
@@ -1079,7 +1078,7 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args){
 
   //Draw Residual
   c1->cd(3);
-  TRatioPlot* rp = new TRatioPlot(F1, DAT_HIST, "diff");
+  TRatioPlot* rp = new TRatioPlot(F1, hists.dat_hist, "diff");
   rp->Draw();
 
   //Write Data
@@ -1124,9 +1123,6 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args){
     pt->AddText(.05, .1, readline.c_str())->SetTextAlign(12);
     infile.close();
   }
-
-
-
   pt->Draw();
 
   //Save and Clean up
@@ -1143,23 +1139,23 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args){
   delete legend1;
 }
 
-void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_Ps_m, indices_t ins, double alpha){
-  if(!(DAT_HIST->Integral() + BKG_HIST->Integral())) return;
-  double N_D = DAT_HIST->Integral();
-  double N_B = BKG_HIST->Integral();
+void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_Ps_m, indices_t ins, double alpha, hists_t hists){
+  if(!(hists.dat_hist->Integral() + hists.bkg_hist->Integral())) return;
+  double N_D = hists.dat_hist->Integral();
+  double N_B = hists.bkg_hist->Integral();
   double B = alpha * N_B;
   double S = N_D - B;
   double P_S = S / N_D;
   double P_B = B / N_D;
 
-  double sigma_N_D = TMath::Sqrt(DAT_HIST->Integral());
+  double sigma_N_D = TMath::Sqrt(hists.dat_hist->Integral());
   double sigma_B = TMath::Sqrt(alpha) * TMath::Sqrt(B);
   double sigma_S = TMath::Sqrt( TMath::Power(sigma_N_D, 2) + TMath::Power(sigma_B, 2) );
   double sigma_P_S = TMath::Abs(P_S) * TMath::Sqrt( TMath::Power(sigma_S / S, 2) + TMath::Power(sigma_N_D / N_D, 2) );
   double sigma_P_B = TMath::Abs(P_B) * TMath::Sqrt( TMath::Power(sigma_B / B, 2) + TMath::Power(sigma_N_D / N_D, 2) );
 
   std::stringstream filename;
-  filename << "errors" << OUTPATH << ".csv";
+  filename << "errors" << hists.outpath << ".csv";
   std::ofstream f(filename.str().c_str());
   f << "Minuit Values:" << std::endl
     << "Ps: " << Ps_m << std::endl
@@ -1190,7 +1186,7 @@ void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_
   f.close();
 }
 
-void print_cuts(std::string action, cuts_t* cuts){
+void print_cuts(std::string action, cuts_t* cuts, hists_t hists){
   if(!action.compare("reset")){
     std::ofstream f("cuts_data.txt");
     f << PRINTSPACE << "Bin"
@@ -1225,7 +1221,7 @@ void print_cuts(std::string action, cuts_t* cuts){
     std::stringstream fname;
     fname << "cuts_" << action << ".txt";
     std::ofstream f(fname.str().c_str(), std::ios::out | std::ios::app);
-    f << PRINTSPACE << OUTPATH
+    f << PRINTSPACE << hists.outpath
       << PRINTSPACE << cuts->passed
       << PRINTSPACE << cuts->read
       << PRINTSPACE << cuts->src
@@ -1239,14 +1235,14 @@ void print_cuts(std::string action, cuts_t* cuts){
   }
   else if(!action.compare("src")){
     std::ofstream f("cuts_src.txt", std::ios::out | std::ios::app);
-    f << PRINTSPACE << OUTPATH
-      << PRINTSPACE << SRC_HIST->Integral() << std::endl;
+    f << PRINTSPACE << hists.outpath
+      << PRINTSPACE << hists.src_hist->Integral() << std::endl;
     f.close();
   }
 }
 
-void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args){
-  if(!(DAT_HIST->Integral() + BKG_HIST->Integral())) return;
+void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args, hists_t hists){
+  if(!(hists.dat_hist->Integral() + hists.bkg_hist->Integral())) return;
   int xbins = 100;
   int ybins = 100;
   //Find x limits such that xmax <= 1, xmin >= 0, and xmax - xmin = .3
@@ -1300,27 +1296,27 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
   delete map;
 }
 
-void plot_msw_vs_msl(){
-  DAT_2HIST->GetXaxis()->SetTitle("MSW");
-  DAT_2HIST->GetYaxis()->SetTitle("MSL");
-  BKG_2HIST->GetXaxis()->SetTitle("MSW");
-  BKG_2HIST->GetYaxis()->SetTitle("MSL");
+void plot_msw_vs_msl(hists_t hists){
+  hists.dat_2hist->GetXaxis()->SetTitle("MSW");
+  hists.dat_2hist->GetYaxis()->SetTitle("MSL");
+  hists.bkg_2hist->GetXaxis()->SetTitle("MSW");
+  hists.bkg_2hist->GetYaxis()->SetTitle("MSL");
   double dat, bkg;
-  dat = DAT_2HIST->GetMaximum();
-  bkg = BKG_2HIST->GetMaximum();
-  DAT_2HIST->SetMaximum(dat > bkg ? dat : bkg);
-  BKG_2HIST->SetMaximum(dat > bkg ? dat : bkg);
-  dat = DAT_2HIST->GetMinimum();
-  bkg = BKG_2HIST->GetMinimum();
-  DAT_2HIST->SetMinimum(dat < bkg ? dat : bkg);
-  BKG_2HIST->SetMinimum(dat < bkg ? dat : bkg);
+  dat = hists.dat_2hist->GetMaximum();
+  bkg = hists.bkg_2hist->GetMaximum();
+  hists.dat_2hist->SetMaximum(dat > bkg ? dat : bkg);
+  hists.bkg_2hist->SetMaximum(dat > bkg ? dat : bkg);
+  dat = hists.dat_2hist->GetMinimum();
+  bkg = hists.bkg_2hist->GetMinimum();
+  hists.dat_2hist->SetMinimum(dat < bkg ? dat : bkg);
+  hists.bkg_2hist->SetMinimum(dat < bkg ? dat : bkg);
 
   std::stringstream title;
-  title << DAT_2HIST->GetTitle() << " " << OUTPATH;
-  DAT_2HIST->SetTitle(title.str().c_str());
+  title << hists.dat_2hist->GetTitle() << " " << hists.outpath;
+  hists.dat_2hist->SetTitle(title.str().c_str());
   title.str("");
-  title << BKG_2HIST->GetTitle() << " " << OUTPATH;
-  BKG_2HIST->SetTitle(title.str().c_str());
+  title << hists.bkg_2hist->GetTitle() << " " << hists.outpath;
+  hists.bkg_2hist->SetTitle(title.str().c_str());
 
   gStyle->SetPalette(kBlackBody);
   gStyle->SetOptStat(0);
@@ -1328,12 +1324,12 @@ void plot_msw_vs_msl(){
   TCanvas c1("c1", "c1", 2400, 1200);
   c1.Divide(2,1);
   c1.cd(1);
-  DAT_2HIST->Draw("COLZ");
+  hists.dat_2hist->Draw("COLZ");
 
   c1.cd(2);
-  BKG_2HIST->Draw("COLZ");
+  hists.bkg_2hist->Draw("COLZ");
 
   std::stringstream out_file;
-  out_file << "MSWMSL_" << OUTPATH << ".png";
+  out_file << "MSWMSL_" << hists.outpath << ".png";
   c1.SaveAs(out_file.str().c_str());
 }

@@ -96,6 +96,7 @@ struct hists_t{
   TH1D* src_hist;
   TH2D* dat_2hist;
   TH2D* bkg_2hist;
+  std::string outpath;
 };
 
 
