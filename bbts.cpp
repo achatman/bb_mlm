@@ -1,5 +1,6 @@
 #include "bbts.h"
 #include "load_data.h"
+#include "output.h"
 
 std::string OUTPATH;
 
@@ -22,6 +23,7 @@ int parse_command_line(int argc, char* argv[], args_t* args);
 void prepare_std_output_files(args_t args);
 int optional_binning(indices_t indices, args_t args);
 //output function declarations
+/*
 void printRawData(hists_t hists);
 void histogram_raw_data(indices_t ins, hists_t hists);
 void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hists);
@@ -29,7 +31,7 @@ void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_
 void print_cuts(std::string action, cuts_t* cuts, hists_t hists);
 void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args, hists_t hists);
 void plot_msw_vs_msl(hists_t hists);
-
+*/
 
 //Li Ma Significance Calculation
 //Eq 17, Li Ma (1983)
@@ -47,7 +49,7 @@ double lima_sig(double Pb, double Ps){
   return S;
 }
 
-double nosrc_noBB(double Pb, bool print = false, TH1D* F = 0){
+double nosrc_noBB(double Pb, bool print, TH1D* F){
   int i;
   double pb;
   double di, bi, fi;
@@ -106,7 +108,7 @@ double nosrc_noBB(double Pb, bool print = false, TH1D* F = 0){
   return -lnL;
 }
 
-double src_noBB(double Pb, double Ps, bool print = false, TH1D* F = 0){
+double src_noBB(double Pb, double Ps, bool print, TH1D* F){
   int i;
   double pb, ps;
   double di, bi, si, fi;
@@ -173,7 +175,7 @@ double src_noBB(double Pb, double Ps, bool print = false, TH1D* F = 0){
   return -lnL;
 }
 
-double nosrc_BB(double Pb, bool print = false, TH1D* F = 0, TH1D* B = 0){
+double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
   int i;
   double pb;
   double di, bi, Bi, fi;
@@ -255,7 +257,7 @@ double nosrc_BB(double Pb, bool print = false, TH1D* F = 0, TH1D* B = 0){
   return -lnL;
 }
 
-double src_BB(double Pb, double Ps, bool print = false, TH1D* F = 0, TH1D* B = 0){
+double src_BB(double Pb, double Ps, bool print, TH1D* F, TH1D* B){
   int i;
   double pb, ps;
   double di, bi, si, Bi, fi;
@@ -359,7 +361,8 @@ void wrapper_nosrc_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t pa
 
 void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1]); }
 
-void fit(indices_t ins, args_t args, double alpha, double *fracs = 0){
+void fit(indices_t ins, args_t args, double alpha, double *fracs){
+  hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH};
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
   TFitter* fit_src_nobb   = new TFitter(2);
@@ -470,13 +473,14 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs = 0){
                     fit_src_bb->GetParameter(1),
                     fit_src_bb->GetParError(0),
                     fit_src_bb->GetParError(1),
-                    ins, alpha);
+                    ins, alpha, hists);
   }
-  if(args.graphics & 1) map_likelihood(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1), "Std", ins, args);
-  if(args.graphics & 2) map_likelihood(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), "BB", ins, args);
+  if(args.graphics & 1) map_likelihood(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1), "Std", ins, args, hists);
+  if(args.graphics & 2) map_likelihood(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), "BB", ins, args, hists);
 }
 
 void bidirectional(args_t *args, indices_t indices, double alpha){
+  hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH};
   double fracs_for[6];
   fit(indices, *args, alpha, fracs_for);
 
@@ -709,6 +713,7 @@ int main(int argc, char* argv[]){
       for(indices.tel = ti; indices.tel < 2; indices.tel++){
         for(indices.az = ai; indices.az < 8; indices.az++){
           for(indices.off = oi; indices.off < 8; indices.off++){
+            if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
             DAT_HIST = new TH1D("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
             BKG_HIST = new TH1D("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
@@ -717,20 +722,19 @@ int main(int argc, char* argv[]){
               DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
               BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
             }
-            hists_t hist_pointers = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, ""};
-            if(optional_binning(indices, *args, &hists)) continue;
+            hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH};
             double alpha = 1;
-            loadData(indices, *args, &alpha, DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST);
+            loadData(indices, *args, &alpha, hists);
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
-            if(args->output & 2) printRawData(hist_pointers);
-            if(args->hist & 1) histogram_raw_data(indices);
-            if(args->graphics & 4) plot_msw_vs_msl();
+            if(args->output & 2) printRawData(hists);
+            if(args->hist & 1) histogram_raw_data(indices, hists);
+            if(args->graphics & 4) plot_msw_vs_msl(hists);
 
             if(args->bidir) bidirectional(args, indices, alpha);
             else{
               double fracs[6];
               fit(indices, *args, alpha, fracs);
-              if(args->hist & 2) histogram_fit_data(fracs, indices, args);
+              if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists);
             }
 
           }
@@ -904,7 +908,7 @@ void prepare_std_output_files(args_t args){
   if(args.output & 8) print_cuts("reset", 0);
 }
 
-int optional_binning(indices_t indices, args_t args, hists_t *hists){
+int optional_binning(indices_t indices, args_t args){
   std::stringstream path;
   int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0; //TODO
   if(!(args.bin_vars & 1)){
@@ -928,11 +932,12 @@ int optional_binning(indices_t indices, args_t args, hists_t *hists){
   }
   else path << "O" << indices.off;
   std::cout << path.str() << std::endl;
-  hists->outpath = path.str();
+  OUTPATH = path.str();
   return 0;
 }
 
 //Output
+/*
 void printRawData(hists_t hists){
   if(!(hists.dat_hist->Integral() + hists.dat_hist->Integral())) return;
   std::stringstream path;
@@ -1333,3 +1338,4 @@ void plot_msw_vs_msl(hists_t hists){
   out_file << "MSWMSL_" << hists.outpath << ".png";
   c1.SaveAs(out_file.str().c_str());
 }
+*/

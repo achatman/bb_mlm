@@ -99,13 +99,9 @@ struct hists_t{
   std::string outpath;
 };
 
-
-void print_cuts(std::string action, cuts_t* cuts);
-
-
-
-
-
-
+double nosrc_noBB(double Pb, bool print = false, TH1D* F = 0);
+double src_noBB(double Pb, double Ps, bool print = false, TH1D* F = 0);
+double nosrc_BB(double Pb, bool print = false, TH1D* F = 0, TH1D* B = 0);
+double src_BB(double Pb, double Ps, bool print = false, TH1D* F = 0, TH1D* B = 0);
 
 #endif
