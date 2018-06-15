@@ -11,7 +11,7 @@ TH2D* DAT_2HIST;
 TH2D* BKG_2HIST;
 
 //Bin boundaries
-double ZABINS[] = {25.46,32.59,37.57,42.56,47.55};
+double ZABINS[] = {0.00,14.1,25.46,32.59,37.57,42.56,47.55};
 double EBINS[] = {316,630,1259,2512,5012};
 int TBINS[] = {3,4};
 double AZBINS[] = {0,45,90,135,180,225,270,315,360};
@@ -696,13 +696,12 @@ int main(int argc, char* argv[]){
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return 1;
   prepare_std_output_files(*args);
-  int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0;
   indices_t indices;
-  for(indices.za = zi; indices.za < 2; indices.za++){
-    for(indices.e = ei; indices.e < 4; indices.e++){
-      for(indices.tel = ti; indices.tel < 2; indices.tel++){
-        for(indices.az = ai; indices.az < 8; indices.az++){
-          for(indices.off = oi; indices.off < 8; indices.off++){
+  for(indices.za = 0; indices.za < 6; indices.za++){
+    for(indices.e = 0; indices.e < 4; indices.e++){
+      for(indices.tel = 0; indices.tel < 2; indices.tel++){
+        for(indices.az = 0; indices.az < 8; indices.az++){
+          for(indices.off = 0; indices.off < 8; indices.off++){
             if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
             DAT_HIST = new TH1D("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
@@ -719,6 +718,9 @@ int main(int argc, char* argv[]){
             if(args->output & 2) printRawData(hists);
             if(args->hist & 1) histogram_raw_data(indices, hists);
             if(args->graphics & 4) plot_msw_vs_msl(hists);
+            if(!DAT_HIST->Integral()
+              || !BKG_HIST->Integral()
+              || !SRC_HIST->Integral()) continue;
 
             if(args->bidir) bidirectional(args, indices, alpha);
             else{
@@ -900,25 +902,24 @@ void prepare_std_output_files(args_t args){
 
 int optional_binning(indices_t indices, args_t args){
   std::stringstream path;
-  int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0; //TODO
   if(!(args.bin_vars & 1)){
-    if(indices.za != zi) return 1;
+    if(indices.za != 0) return 1;
   }
   else path << "ZA" << indices.za;
   if(!(args.bin_vars & 2)){
-    if(indices.e != ei) return 1;
+    if(indices.e != 0) return 1;
   }
   else path << "E" << indices.e;
   if(!(args.bin_vars & 4)){
-    if(indices.tel != ti) return 1;
+    if(indices.tel != 0) return 1;
   }
   else path << "T" << TBINS[indices.tel];
   if(!(args.bin_vars & 8)){
-    if(indices.az != ai) return 1;
+    if(indices.az != 0) return 1;
   }
   else path << "A" << indices.az;
   if(!(args.bin_vars & 16)){
-    if(indices.off != oi) return 1;
+    if(indices.off != 0) return 1;
   }
   else path << "O" << indices.off;
   std::cout << path.str() << std::endl;
