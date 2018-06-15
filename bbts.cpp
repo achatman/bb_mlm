@@ -3,6 +3,7 @@
 #include "output.h"
 
 std::string OUTPATH;
+std::string LONGOUTPATH;
 
 TH1D* DAT_HIST;
 TH1D* BKG_HIST;
@@ -52,7 +53,7 @@ double nosrc_noBB(double Pb, bool print, TH1D* F){
     path << "Bin_NoSrc_Std_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
-    f << "Bin: " << OUTPATH << std::endl;
+    f << "Bin: " << LONGOUTPATH << std::endl;
     f << std::scientific;
     f << "bkgfrac    " << Pb << std::endl;
     f << "srcfrac    -----" << std::endl;
@@ -112,7 +113,7 @@ double src_noBB(double Pb, double Ps, bool print, TH1D* F){
     path << "Bin_Src_Std_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
-    f << "Bin: " << OUTPATH << std::endl;
+    f << "Bin: " << LONGOUTPATH << std::endl;
     f << std::scientific;
     f << "bkgfrac    " << Pb << std::endl;
     f << "srcfrac    " << Ps << std::endl;
@@ -179,7 +180,7 @@ double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
     path << "Bin_NoSrc_BB_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
-    f << "Bin: " << OUTPATH << std::endl;
+    f << "Bin: " << LONGOUTPATH << std::endl;
     f << std::scientific;
     f << "bkgfrac    " << Pb << std::endl;
     f << "srcfrac    -----" << std::endl;
@@ -262,7 +263,7 @@ double src_BB(double Pb, double Ps, bool print, TH1D* F, TH1D* B){
     path << "Bin_Src_BB_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
-    f << "Bin: " << OUTPATH << std::endl;
+    f << "Bin: " << LONGOUTPATH << std::endl;
     f << std::scientific;
     f << "bkgfrac    " << Pb << std::endl;
     f << "srcfrac    " << Ps << std::endl;
@@ -352,7 +353,7 @@ void wrapper_nosrc_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t pa
 void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1]); }
 
 void fit(indices_t ins, args_t args, double alpha, double *fracs){
-  hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH};
+  hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH, LONGOUTPATH};
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
   TFitter* fit_src_nobb   = new TFitter(2);
@@ -470,7 +471,6 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs){
 }
 
 void bidirectional(args_t *args, indices_t indices, double alpha){
-  hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH};
   double fracs_for[6];
   fit(indices, *args, alpha, fracs_for);
 
@@ -708,10 +708,10 @@ int main(int argc, char* argv[]){
             BKG_HIST = new TH1D("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
             SRC_HIST = new TH1D("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
             if(args->graphics & 4){
-              DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
-              BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
             }
-            hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH};
+            hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH, LONGOUTPATH};
             double alpha = 1;
             loadData(indices, *args, &alpha, hists);
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
@@ -902,6 +902,34 @@ void prepare_std_output_files(args_t args){
 
 int optional_binning(indices_t indices, args_t args){
   std::stringstream path;
+  std::stringstream longpath;
+  if(!(args.bin_vars & 1) && indices.za != 0) return 1;
+  else if(args.bin_vars & 1){
+    path << "ZA" << indices.za;
+    longpath << "ZA" << ZABINS[indices.za] << "-" << ZABINS[indices.za+1];
+  }
+  if(!(args.bin_vars & 2) && indices.e != 0) return 1;
+  else if(args.bin_vars & 2){
+    path << "E" << indices.e;
+    longpath << "_E" << EBINS[indices.e] << "-" << EBINS[indices.e+1];
+  }
+  if(!(args.bin_vars & 4) && indices.tel != 0) return 1;
+  else if(args.bin_vars & 4){
+    path << "T" << TBINS[indices.tel];
+    longpath << "_T" << TBINS[indices.tel];
+  }
+  if(!(args.bin_vars & 8) && indices.az != 0) return 1;
+  else if(args.bin_vars & 8){
+    path << "A" << indices.az;
+    longpath << "_A" << AZBINS[indices.az] << "-" << AZBINS[indices.az+1];
+  }
+  if(!(args.bin_vars & 16) && indices.off != 0) return 1;
+  else if(args.bin_vars & 16){
+    path << "O" << indices.off;
+    longpath << "_O" << OBINS[indices.off] << "-" << OBINS[indices.off+1];
+  }
+
+  /*
   if(!(args.bin_vars & 1)){
     if(indices.za != 0) return 1;
   }
@@ -922,7 +950,10 @@ int optional_binning(indices_t indices, args_t args){
     if(indices.off != 0) return 1;
   }
   else path << "O" << indices.off;
+  */
   std::cout << path.str() << std::endl;
+  std::cout << longpath.str() << std::endl;
   OUTPATH = path.str();
+  LONGOUTPATH = longpath.str();
   return 0;
 }

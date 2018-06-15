@@ -1,10 +1,10 @@
 #include "output.h"
 
 void printRawData(hists_t hists){
-  if(!(hists.dat_hist->Integral() + hists.dat_hist->Integral())) return;
   std::stringstream path;
   path << "RawData_" << hists.outpath << ".csv";
   std::ofstream f(path.str().c_str());
+  f << "Bin: " << hists.longoutpath << std::endl;
   f << "MSW, di, bi, si" << std::endl;
   for(int i = 1; i <= NBIN; i++){
     f << hists.dat_hist->GetBinCenter(i) << ","
@@ -15,7 +15,6 @@ void printRawData(hists_t hists){
 }
 
 void histogram_raw_data(indices_t ins, hists_t hists){
-  if(!(hists.dat_hist->Integral() + hists.bkg_hist->Integral())) return;
   std::stringstream filepath;
   filepath << "HIST_RAW_" << hists.outpath << ".png";
 
@@ -32,7 +31,9 @@ void histogram_raw_data(indices_t ins, hists_t hists){
   dathist->SetStats(false);
   bkghist->SetStats(false);
 
-  dathist->SetTitle(hists.outpath.c_str());
+  std::stringstream title;
+  title << "Raw " << hists.longoutpath;
+  dathist->SetTitle(title.str().c_str());
 
   bkghist->Scale(hists.dat_hist->Integral() / hists.bkg_hist->Integral());
 
@@ -61,7 +62,6 @@ void histogram_raw_data(indices_t ins, hists_t hists){
 }
 
 void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hists){
-  if(!(hists.dat_hist->Integral() + hists.bkg_hist->Integral())) return;
   std::stringstream filepath;
   filepath << "HIST_FIT_" << hists.outpath << ".png";
 
@@ -171,13 +171,39 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hi
   line.str("");
   line << "TS = " << -2 * (src_BB(fracs[2], fracs[3]) - nosrc_BB(fracs[5]));
   pt->AddText(.55, .75, line.str().c_str())->SetTextAlign(12);
-  pt->AddLine(0, .7, 1, .7);
+  line.str("");
+  if(args->bin_vars & 1){
+    line << "ZA: " << ZABINS[ins.za] << "-" << ZABINS[ins.za+1];
+    pt->AddText(.05, .65, line.str().c_str())->SetTextAlign(12);
+    line.str("");
+  }
+  if(args->bin_vars & 2){
+    line << "E: " << EBINS[ins.e] << "-" << EBINS[ins.e+1];
+    pt->AddText(.45, .65, line.str().c_str())->SetTextAlign(12);
+    line.str("");
+  }
+  if(args->bin_vars & 4){
+    line << "Tel: " << TBINS[ins.tel];
+    pt->AddText(.85, .65, line.str().c_str())->SetTextAlign(12);
+    line.str("");
+  }
+  if(args->bin_vars & 8){
+    line << "Az: " << AZBINS[ins.az] << "-" << AZBINS[ins.az+1];
+    pt->AddText(.05, .6, line.str().c_str())->SetTextAlign(12);
+    line.str("");
+  }
+  if(args->bin_vars & 16){
+    line << "Off: " << OBINS[ins.off] << "-" << OBINS[ins.off+1];
+    pt->AddText(.45, .6, line.str().c_str())->SetTextAlign(12);
+    line.str("");
+  }
+
+  pt->AddLine(0, .55, 1, .55);
   pt->SetAllWith("=", "size", .05);
+  pt->SetAllWith(": ", "size", .05);
   if(args->op_info.c_str()){
     std::ifstream infile(args->op_info);
     std::string readline;
-    std::getline(infile, readline);
-    pt->AddText(.05, .6, readline.c_str())->SetTextAlign(12);
     std::getline(infile, readline);
     pt->AddText(.05, .5, readline.c_str())->SetTextAlign(12);
     std::getline(infile, readline);
@@ -207,7 +233,6 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hi
 }
 
 void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_Ps_m, indices_t ins, double alpha, hists_t hists){
-  if(!(hists.dat_hist->Integral() + hists.bkg_hist->Integral())) return;
   double N_D = hists.dat_hist->Integral();
   double N_B = hists.bkg_hist->Integral();
   double B = alpha * N_B;
@@ -299,7 +324,6 @@ void print_cuts(std::string action, cuts_t* cuts, std::string outpath){
 }
 
 void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args, hists_t hists){
-  if(!(hists.dat_hist->Integral() + hists.bkg_hist->Integral())) return;
   int xbins = 100;
   int ybins = 100;
   //Find x limits such that xmax <= 1, xmin >= 0, and xmax - xmin = .3
@@ -318,7 +342,7 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
   }
 
   std::stringstream title;
-  title << "Likelihood " << title_tag << " " << hists.outpath;
+  title << "Likelihood " << title_tag << " " << hists.longoutpath;
 
   gStyle->SetOptStat(0);
   TCanvas *c1 = new TCanvas("c1","c1", 1200,800);
@@ -339,7 +363,7 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
   gStyle->SetPalette(kBlackBody);
   map->Draw("SURF3");
   std::stringstream out_file;
-  out_file << boost::replace_all_copy(title.str(), " ", "_") << ".png";
+  out_file << "Likelihood_" << title_tag << "_" << hists.outpath << ".png";
   c1->SaveAs(out_file.str().c_str());
 
   //clean up
@@ -363,10 +387,10 @@ void plot_msw_vs_msl(hists_t hists){
   hists.bkg_2hist->SetMinimum(dat < bkg ? dat : bkg);
 
   std::stringstream title;
-  title << hists.dat_2hist->GetTitle() << " " << hists.outpath;
+  title << hists.dat_2hist->GetTitle() << " " << hists.longoutpath;
   hists.dat_2hist->SetTitle(title.str().c_str());
   title.str("");
-  title << hists.bkg_2hist->GetTitle() << " " << hists.outpath;
+  title << hists.bkg_2hist->GetTitle() << " " << hists.longoutpath;
   hists.bkg_2hist->SetTitle(title.str().c_str());
 
   gStyle->SetPalette(kBlackBody);
