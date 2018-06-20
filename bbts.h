@@ -97,6 +97,7 @@ struct hists_t{
   TH2D* dat_2hist;
   TH2D* bkg_2hist;
   std::string outpath;
+  std::string longoutpath;
 };
 
 double nosrc_noBB(double Pb, bool print = false, TH1D* F = 0);

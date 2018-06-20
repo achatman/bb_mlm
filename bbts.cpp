@@ -3,6 +3,7 @@
 #include "output.h"
 
 std::string OUTPATH;
+std::string LONGOUTPATH;
 
 TH1D* DAT_HIST;
 TH1D* BKG_HIST;
@@ -11,7 +12,7 @@ TH2D* DAT_2HIST;
 TH2D* BKG_2HIST;
 
 //Bin boundaries
-double ZABINS[] = {25.46,32.59,37.57,42.56,47.55};
+double ZABINS[] = {0.00,14.1,25.46,32.59,37.57,42.56,47.55};
 double EBINS[] = {316,630,1259,2512,5012};
 int TBINS[] = {3,4};
 double AZBINS[] = {0,45,90,135,180,225,270,315,360};
@@ -49,10 +50,10 @@ double nosrc_noBB(double Pb, bool print, TH1D* F){
   pb = Pb * DAT_HIST->Integral() / BKG_HIST->Integral();
   if(print){
     std::stringstream path;
-    path << "BIN_src0_bb0_" << OUTPATH << ".txt";
+    path << "Bin_NoSrc_Std_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
-    f << "Bin: " << OUTPATH << std::endl;
+    f << "Bin: " << LONGOUTPATH << std::endl;
     f << std::scientific;
     f << "bkgfrac    " << Pb << std::endl;
     f << "srcfrac    -----" << std::endl;
@@ -109,10 +110,10 @@ double src_noBB(double Pb, double Ps, bool print, TH1D* F){
   ps = Ps * DAT_HIST->Integral() / SRC_HIST->Integral();
   if(print){
     std::stringstream path;
-    path << "BIN_src1_bb0_" << OUTPATH << ".txt";
+    path << "Bin_Src_Std_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
-    f << "Bin: " << OUTPATH << std::endl;
+    f << "Bin: " << LONGOUTPATH << std::endl;
     f << std::scientific;
     f << "bkgfrac    " << Pb << std::endl;
     f << "srcfrac    " << Ps << std::endl;
@@ -176,10 +177,10 @@ double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
   pb = Pb * DAT_HIST->Integral() / BKG_HIST->Integral();
   if(print){
     std::stringstream path;
-    path << "BIN_src0_bb1_" << OUTPATH << ".txt";
+    path << "Bin_NoSrc_BB_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
-    f << "Bin: " << OUTPATH << std::endl;
+    f << "Bin: " << LONGOUTPATH << std::endl;
     f << std::scientific;
     f << "bkgfrac    " << Pb << std::endl;
     f << "srcfrac    -----" << std::endl;
@@ -259,10 +260,10 @@ double src_BB(double Pb, double Ps, bool print, TH1D* F, TH1D* B){
   ps = Ps * DAT_HIST->Integral() / SRC_HIST->Integral();
   if(print){
     std::stringstream path;
-    path << "BIN_src1_bb1_" << OUTPATH << ".txt";
+    path << "Bin_Src_BB_" << OUTPATH << ".txt";
     f.open(path.str());
     f.precision(5);
-    f << "Bin: " << OUTPATH << std::endl;
+    f << "Bin: " << LONGOUTPATH << std::endl;
     f << std::scientific;
     f << "bkgfrac    " << Pb << std::endl;
     f << "srcfrac    " << Ps << std::endl;
@@ -352,7 +353,7 @@ void wrapper_nosrc_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t pa
 void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1]); }
 
 void fit(indices_t ins, args_t args, double alpha, double *fracs){
-  hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH};
+  hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH, LONGOUTPATH};
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
   TFitter* fit_src_nobb   = new TFitter(2);
@@ -470,7 +471,6 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs){
 }
 
 void bidirectional(args_t *args, indices_t indices, double alpha){
-  hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH};
   double fracs_for[6];
   fit(indices, *args, alpha, fracs_for);
 
@@ -696,29 +696,31 @@ int main(int argc, char* argv[]){
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return 1;
   prepare_std_output_files(*args);
-  int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0;
   indices_t indices;
-  for(indices.za = zi; indices.za < 2; indices.za++){
-    for(indices.e = ei; indices.e < 4; indices.e++){
-      for(indices.tel = ti; indices.tel < 2; indices.tel++){
-        for(indices.az = ai; indices.az < 8; indices.az++){
-          for(indices.off = oi; indices.off < 8; indices.off++){
+  for(indices.za = 0; indices.za < 6; indices.za++){
+    for(indices.e = 0; indices.e < 4; indices.e++){
+      for(indices.tel = 0; indices.tel < 2; indices.tel++){
+        for(indices.az = 0; indices.az < 8; indices.az++){
+          for(indices.off = 0; indices.off < 8; indices.off++){
             if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
             DAT_HIST = new TH1D("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
             BKG_HIST = new TH1D("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
             SRC_HIST = new TH1D("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
             if(args->graphics & 4){
-              DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
-              BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSW vs MSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
             }
-            hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH};
+            hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH, LONGOUTPATH};
             double alpha = 1;
             loadData(indices, *args, &alpha, hists);
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
             if(args->output & 2) printRawData(hists);
             if(args->hist & 1) histogram_raw_data(indices, hists);
             if(args->graphics & 4) plot_msw_vs_msl(hists);
+            if(!DAT_HIST->Integral()
+              || !BKG_HIST->Integral()
+              || !SRC_HIST->Integral()) continue;
 
             if(args->bidir) bidirectional(args, indices, alpha);
             else{
@@ -900,28 +902,58 @@ void prepare_std_output_files(args_t args){
 
 int optional_binning(indices_t indices, args_t args){
   std::stringstream path;
-  int zi = 1, ei = 0, ti = 0, ai = 0, oi = 0; //TODO
+  std::stringstream longpath;
+  if(!(args.bin_vars & 1) && indices.za != 0) return 1;
+  else if(args.bin_vars & 1){
+    path << "ZA" << indices.za;
+    longpath << "ZA" << ZABINS[indices.za] << "-" << ZABINS[indices.za+1];
+  }
+  if(!(args.bin_vars & 2) && indices.e != 0) return 1;
+  else if(args.bin_vars & 2){
+    path << "E" << indices.e;
+    longpath << "_E" << EBINS[indices.e] << "-" << EBINS[indices.e+1];
+  }
+  if(!(args.bin_vars & 4) && indices.tel != 0) return 1;
+  else if(args.bin_vars & 4){
+    path << "T" << TBINS[indices.tel];
+    longpath << "_T" << TBINS[indices.tel];
+  }
+  if(!(args.bin_vars & 8) && indices.az != 0) return 1;
+  else if(args.bin_vars & 8){
+    path << "A" << indices.az;
+    longpath << "_A" << AZBINS[indices.az] << "-" << AZBINS[indices.az+1];
+  }
+  if(!(args.bin_vars & 16) && indices.off != 0) return 1;
+  else if(args.bin_vars & 16){
+    path << "O" << indices.off;
+    longpath << "_O" << OBINS[indices.off] << "-" << OBINS[indices.off+1];
+  }
+
+  /*
   if(!(args.bin_vars & 1)){
-    if(indices.za != zi) return 1;
+    if(indices.za != 0) return 1;
   }
   else path << "ZA" << indices.za;
   if(!(args.bin_vars & 2)){
-    if(indices.e != ei) return 1;
+    if(indices.e != 0) return 1;
   }
   else path << "E" << indices.e;
   if(!(args.bin_vars & 4)){
-    if(indices.tel != ti) return 1;
+    if(indices.tel != 0) return 1;
   }
   else path << "T" << TBINS[indices.tel];
   if(!(args.bin_vars & 8)){
-    if(indices.az != ai) return 1;
+    if(indices.az != 0) return 1;
   }
   else path << "A" << indices.az;
   if(!(args.bin_vars & 16)){
-    if(indices.off != oi) return 1;
+    if(indices.off != 0) return 1;
   }
   else path << "O" << indices.off;
+  */
   std::cout << path.str() << std::endl;
+  std::cout << longpath.str() << std::endl;
   OUTPATH = path.str();
+  LONGOUTPATH = longpath.str();
   return 0;
 }

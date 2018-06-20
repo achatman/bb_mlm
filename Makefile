@@ -2,7 +2,7 @@ all: bbts load_data output
 	$$(root-config --cxx --cflags --libs) $$VEGAS/common/lib/libSP24sharedLite.so $$VEGAS/resultsExtractor/lib/libStage6shared.so $$VEGAS/coordinates/lib/vaCoordShared.so $$VEGAS/showerReconstruction2/lib/libStage4.so -I$$VEGAS/resultsExtractor/include -I$$VEGAS/common/include -I$$VEGAS/showerReconstruction2/include -I$$VEGAS/coordinates/include -I$$VEGAS/eventSelection/include -D_OAWG -lMinuit -lTreePlayer load_data.o bbts.o output.o -o bbts
 
 clean:
-	rm -rf BIN* raw_data* fitstats* error* summary.csv HIST* cuts* BB_Likelihood* Std_Likelihood* Bidirectional* MSWMSL*
+	rm -rf Bin_* RawData* fitstats* Errors_* summary.csv HIST* Cuts_* Likelihood* Bidirectional* MSWMSL*
 
 clobber: clean
 	rm -rf slurm* *.o bbts
