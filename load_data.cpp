@@ -311,14 +311,9 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
 
   if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
   std::cout << pathbase << " Offset Overflow: " << overflow << std::endl;
-
   if(pathbase == "bkg"){
     bkg_centers.push_back(std::make_pair(ra_dec->GetMean(1), ra_dec->GetMean(2)));
-    for(auto &it : bkg_centers){
-      std::cout << it.first << "," << it.second << std::endl;
-    }
   }
-
   return 1;
 }
 
@@ -367,6 +362,7 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
   }
   else if(args.format == Format_t::Vegas){
     loadData_vegas(ins, args, "data", hists.dat_hist, hists.dat_2hist);
+    if(!hists.dat_hist->Integral()) return;
     //This is not ideal. If there are multiple background sources, iterate through and move
     //each to bkg.list and bkg_src.txt one at a time.
     if(!access("bkg_sources.list", F_OK)){
@@ -387,6 +383,7 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
     else{
       loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
     }
+    if(!hists.bkg_hist->Integral()) return;
     *alpha = hists.dat_hist->Integral() / hists.bkg_hist->Integral(); //TODO
     loadsrc_csv(ins, args, hists.src_hist);
     std::cout << "Histograms loaded from Vegas format." << std::endl;

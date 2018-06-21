@@ -697,7 +697,7 @@ int main(int argc, char* argv[]){
   if(parse_command_line(argc, argv, args)) return 1;
   prepare_std_output_files(*args);
   indices_t indices;
-  for(indices.za = 2; indices.za < 6; indices.za++){
+  for(indices.za = 0; indices.za < 6; indices.za++){
     for(indices.e = 0; indices.e < 4; indices.e++){
       for(indices.tel = 0; indices.tel < 2; indices.tel++){
         for(indices.az = 0; indices.az < 8; indices.az++){
