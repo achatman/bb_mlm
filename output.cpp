@@ -281,21 +281,7 @@ void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_
 void print_cuts(std::string pathbase, cuts_t* cuts, std::string outpath){
   std::stringstream fname;
   fname << "Cuts_" << pathbase << ".txt";
-  if(!access(fname.str().c_str(), F_OK)){
-    std::ofstream f(fname.str().c_str(), std::ios::out | std::ios::app);
-    f << PRINTSPACE << outpath
-    << PRINTSPACE << cuts->passed
-    << PRINTSPACE << cuts->read
-    << PRINTSPACE << cuts->src
-    << PRINTSPACE << cuts->tel
-    << PRINTSPACE << cuts->e
-    << PRINTSPACE << cuts->za
-    << PRINTSPACE << cuts->msw
-    << PRINTSPACE << cuts->az
-    << PRINTSPACE << cuts->off << std::endl;
-    f.close();
-  }
-  else{
+  if(access(fname.str().c_str(), F_OK)){
     std::ofstream f(fname.str().c_str());
     f << PRINTSPACE << "Bin"
     << PRINTSPACE << "passed"
@@ -309,6 +295,18 @@ void print_cuts(std::string pathbase, cuts_t* cuts, std::string outpath){
     << PRINTSPACE << "offset" << std::endl;
     f.close();
   }
+  std::ofstream f(fname.str().c_str(), std::ios::out | std::ios::app);
+  f << PRINTSPACE << outpath
+  << PRINTSPACE << cuts->passed
+  << PRINTSPACE << cuts->read
+  << PRINTSPACE << cuts->src
+  << PRINTSPACE << cuts->tel
+  << PRINTSPACE << cuts->e
+  << PRINTSPACE << cuts->za
+  << PRINTSPACE << cuts->msw
+  << PRINTSPACE << cuts->az
+  << PRINTSPACE << cuts->off << std::endl;
+  f.close();
 }
 
 void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args, hists_t hists){
