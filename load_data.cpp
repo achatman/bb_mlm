@@ -362,7 +362,6 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
   }
   else if(args.format == Format_t::Vegas){
     loadData_vegas(ins, args, "data", hists.dat_hist, hists.dat_2hist);
-    if(!hists.dat_hist->Integral()) return;
     //This is not ideal. (Slightly better now)
     if(!access("bkg_sources.list", F_OK)){
       std::ifstream flist("bkg_sources.list");
@@ -374,7 +373,6 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
     else{
       loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
     }
-    if(!hists.bkg_hist->Integral()) return;
     *alpha = hists.dat_hist->Integral() / hists.bkg_hist->Integral(); //TODO
     loadsrc_csv(ins, args, hists.src_hist);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
