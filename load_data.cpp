@@ -3,6 +3,8 @@
 
 std::string OUTSTR;
 
+std::vector<std::pair<double,double>> bkg_centers;
+
 void loadsrc_csv(indices_t ins, args_t args, TH1D* SRC_HIST){
   std::cout << "Loading Source" << std::endl;
   timestamp;
@@ -205,6 +207,9 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
   VAShowerData* shower = new VAShowerData;
   chain->SetBranchAddress("S", &shower);
 
+  //Set up RA/DEC Hist
+  TH2D* ra_dec = new TH2D("RA_DEC", "RA_DEC", 360, 0, 360, 360, 0, 360);
+
   cuts_t cuts;
   timestamp;
   std::cout << "Loading " << pathbase << std::endl;
@@ -291,6 +296,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
 
     HIST->Fill(shower->fMSW);
     if(HIST2D) HIST2D->Fill(shower->fMSW, shower->fMSL);
+    ra_dec->Fill(eventRA, eventDec);
   }
   cuts.passed = HIST->Integral();
   std::cout << cuts.passed << " passed cuts." << std::endl;
@@ -304,10 +310,10 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
   std::cout << cuts.off << " failed off cut." << std::endl;
 
   if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
-
-
   std::cout << pathbase << " Offset Overflow: " << overflow << std::endl;
-
+  if(pathbase == "bkg"){
+    bkg_centers.push_back(std::make_pair(ra_dec->GetMean(1), ra_dec->GetMean(2)));
+  }
   return 1;
 }
 
@@ -356,7 +362,28 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
   }
   else if(args.format == Format_t::Vegas){
     loadData_vegas(ins, args, "data", hists.dat_hist, hists.dat_2hist);
-    loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
+    if(!hists.dat_hist->Integral()) return;
+    //This is not ideal. If there are multiple background sources, iterate through and move
+    //each to bkg.list and bkg_src.txt one at a time.
+    if(!access("bkg_sources.list", F_OK)){
+      std::ifstream flist("bkg_sources.list");
+      std::string line;
+      while(std::getline(flist, line)){
+        std::cout << "Loading " << line << std::endl;
+        std::stringstream command;
+        command << "cp " << line << ".list" << " bkg.list";
+        system(command.str().c_str());
+        command.str("");
+        command << "cp " << line << "_src.txt" << " bkg_src.txt";
+        system(command.str().c_str());
+        loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
+      }
+      system("rm bkg.list bkg_src.txt");
+    }
+    else{
+      loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
+    }
+    if(!hists.bkg_hist->Integral()) return;
     *alpha = hists.dat_hist->Integral() / hists.bkg_hist->Integral(); //TODO
     loadsrc_csv(ins, args, hists.src_hist);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
@@ -372,5 +399,20 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
     std::cerr << "No valid data format specified." << std::endl;
     throw 999;
   }
+
+  if(bkg_centers.size()){
+    for(auto &i : bkg_centers){
+      for(auto &j : bkg_centers){
+        if(i != j){
+          VACoordinatePair icoord = VACoordinatePair(i.first,i.second,VACoordinates::J2000,VACoordinates::Deg);
+          VACoordinatePair jcoord = VACoordinatePair(j.first,j.second,VACoordinates::J2000,VACoordinates::Deg);
+          if(icoord.angularSeparation_Deg(jcoord) < 3.5){
+            std::cerr << "Background Overlap: Two background sources are within 3.5 degrees of each other." << std::endl;
+          }
+        }
+      }
+    }
+  }
+
 
 }
