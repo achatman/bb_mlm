@@ -897,7 +897,6 @@ void prepare_std_output_files(args_t args){
   f2 << "bkgfrac_nosrc, bkgfrac, srcfrac, dataCt, bkgCt, srcCt, lnL_nosrc, lnL_src, TS" << std::endl;
   f3 << "ct_ratio,TS_noBB,TS_BB,Lima_std,Lima_bb" << std::endl;
   f1.close(); f2.close(); f3.close();
-  if(args.output & 8) print_cuts("reset", 0);
 }
 
 int optional_binning(indices_t indices, args_t args){
