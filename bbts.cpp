@@ -928,29 +928,6 @@ int optional_binning(indices_t indices, args_t args){
     path << "O" << indices.off;
     longpath << "_O" << OBINS[indices.off] << "-" << OBINS[indices.off+1];
   }
-
-  /*
-  if(!(args.bin_vars & 1)){
-    if(indices.za != 0) return 1;
-  }
-  else path << "ZA" << indices.za;
-  if(!(args.bin_vars & 2)){
-    if(indices.e != 0) return 1;
-  }
-  else path << "E" << indices.e;
-  if(!(args.bin_vars & 4)){
-    if(indices.tel != 0) return 1;
-  }
-  else path << "T" << TBINS[indices.tel];
-  if(!(args.bin_vars & 8)){
-    if(indices.az != 0) return 1;
-  }
-  else path << "A" << indices.az;
-  if(!(args.bin_vars & 16)){
-    if(indices.off != 0) return 1;
-  }
-  else path << "O" << indices.off;
-  */
   std::cout << path.str() << std::endl;
   std::cout << longpath.str() << std::endl;
   OUTPATH = path.str();
