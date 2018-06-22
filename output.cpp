@@ -309,49 +309,6 @@ void print_cuts(std::string pathbase, cuts_t* cuts, std::string outpath){
     << PRINTSPACE << "offset" << std::endl;
     f.close();
   }
-  /*
-  if(!action.compare("reset")){
-    std::ofstream f("Cuts_data.txt");
-    f << PRINTSPACE << "Bin"
-    << PRINTSPACE << "passed"
-    << PRINTSPACE << "read"
-    << PRINTSPACE << "source"
-    << PRINTSPACE << "telescope"
-    << PRINTSPACE << "energy"
-    << PRINTSPACE << "zenith angle"
-    << PRINTSPACE << "msw"
-    << PRINTSPACE << "azimuth"
-    << PRINTSPACE << "offset" << std::endl;
-    f.close();
-    f.open("Cuts_bkg.txt");
-    f << PRINTSPACE << "Bin"
-    << PRINTSPACE << "passed"
-    << PRINTSPACE << "read"
-    << PRINTSPACE << "source"
-    << PRINTSPACE << "telescope"
-    << PRINTSPACE << "energy"
-    << PRINTSPACE << "zenith angle"
-    << PRINTSPACE << "msw"
-    << PRINTSPACE << "azimuth"
-    << PRINTSPACE << "offset" << std::endl;
-    f.close();
-  }
-  else{
-    std::stringstream fname;
-    fname << "Cuts_" << action << ".txt";
-    std::ofstream f(fname.str().c_str(), std::ios::out | std::ios::app);
-    f << PRINTSPACE << outpath
-    << PRINTSPACE << cuts->passed
-    << PRINTSPACE << cuts->read
-    << PRINTSPACE << cuts->src
-    << PRINTSPACE << cuts->tel
-    << PRINTSPACE << cuts->e
-    << PRINTSPACE << cuts->za
-    << PRINTSPACE << cuts->msw
-    << PRINTSPACE << cuts->az
-    << PRINTSPACE << cuts->off << std::endl;
-    f.close();
-  }*/
 }
 
 void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args, hists_t hists){

@@ -363,23 +363,13 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
   else if(args.format == Format_t::Vegas){
     loadData_vegas(ins, args, "data", hists.dat_hist, hists.dat_2hist);
     if(!hists.dat_hist->Integral()) return;
-    //This is not ideal.
+    //This is not ideal. (Slightly better now)
     if(!access("bkg_sources.list", F_OK)){
       std::ifstream flist("bkg_sources.list");
       std::string line;
       while(std::getline(flist, line)){
-        std::cout << "Loading " << line << std::endl;
-        /*
-        std::stringstream command;
-        command << "cp " << line << ".list" << " bkg.list";
-        system(command.str().c_str());
-        command.str("");
-        command << "cp " << line << "_src.txt" << " bkg_src.txt";
-        system(command.str().c_str());
-        */
         loadData_vegas(ins, args, line, hists.bkg_hist, hists.bkg_2hist);
       }
-      system("rm bkg.list bkg_src.txt");
     }
     else{
       loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
