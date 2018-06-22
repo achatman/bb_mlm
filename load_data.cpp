@@ -169,7 +169,6 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
     << std::endl;
     excl_exists = false;
   }
-  int overflow = 0;
   typedef struct SourceCut
   {
     VACoordinatePair coords;
@@ -215,6 +214,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
   std::cout << "Loading " << pathbase << std::endl;
   //Construct Histogram
   for(int i = 0; i < chain->GetEntries(); i++){
+    bool cont = false;
     chain->GetEntry(i);
     cuts.read++;
     //Source Cut
@@ -228,7 +228,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
     }
     if(fail_src_cuts && excl_exists){
       cuts.src++;
-      continue;
+      cont = true;
     }
 
     //Tel cut
@@ -237,7 +237,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
       int eventNTel = count(tels_used.begin(), tels_used.end(), 1);
       if(eventNTel != TBINS[ins.tel]){
         cuts.tel++;
-        continue;
+        cont = true;
       }
     }
 
@@ -245,7 +245,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
     if(args.bin_vars & 2){
       if(shower->fEnergy_GeV > EBINS[ins.e + 1] || shower->fEnergy_GeV < EBINS[ins.e]){
         cuts.e++;
-        continue;
+        cont = true;
       }
     }
 
@@ -254,14 +254,14 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
       Double_t ZA = 90.0 - (shower->fDirectionElevation_Rad * TMath::RadToDeg());
       if(ZA > ZABINS[ins.za + 1] || ZA < ZABINS[ins.za]){
         cuts.za++;
-        continue;
+        cont = true;
       }
     }
 
     //MSW cut
     if(shower->fMSW < MSWLOW || shower->fMSW > MSWHIGH){
       cuts.msw++;
-      continue;
+      cont = true;
     }
 
     //AZ cut
@@ -269,7 +269,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
       double az = shower->fDirectionAzimuth_Rad * TMath::RadToDeg();
       if(az > AZBINS[ins.az + 1] || az < AZBINS[ins.az]){
         cuts.az++;
-        continue;
+        cont = true;
       }
     }
     //Offset cut
@@ -287,13 +287,13 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
         VACoordinates::Rad
       );
       double offset = tracking_coords.angularSeparation_Deg(shower_coords);
-      if(offset > 2.0) overflow++;
       if(offset > OBINS[ins.off + 1] || offset < OBINS[ins.off]){
         cuts.off++;
-        continue;
+        cont = true;
       }
     }
 
+    if(cont) continue;
     HIST->Fill(shower->fMSW);
     if(HIST2D) HIST2D->Fill(shower->fMSW, shower->fMSL);
     ra_dec->Fill(eventRA, eventDec);
@@ -310,7 +310,6 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
   std::cout << cuts.off << " failed off cut." << std::endl;
 
   if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
-  std::cout << pathbase << " Offset Overflow: " << overflow << std::endl;
   if(pathbase == "bkg"){
     bkg_centers.push_back(std::make_pair(ra_dec->GetMean(1), ra_dec->GetMean(2)));
   }
@@ -362,28 +361,17 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
   }
   else if(args.format == Format_t::Vegas){
     loadData_vegas(ins, args, "data", hists.dat_hist, hists.dat_2hist);
-    if(!hists.dat_hist->Integral()) return;
-    //This is not ideal. If there are multiple background sources, iterate through and move
-    //each to bkg.list and bkg_src.txt one at a time.
+    //This is not ideal. (Slightly better now)
     if(!access("bkg_sources.list", F_OK)){
       std::ifstream flist("bkg_sources.list");
       std::string line;
       while(std::getline(flist, line)){
-        std::cout << "Loading " << line << std::endl;
-        std::stringstream command;
-        command << "cp " << line << ".list" << " bkg.list";
-        system(command.str().c_str());
-        command.str("");
-        command << "cp " << line << "_src.txt" << " bkg_src.txt";
-        system(command.str().c_str());
-        loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
+        loadData_vegas(ins, args, line, hists.bkg_hist, hists.bkg_2hist);
       }
-      system("rm bkg.list bkg_src.txt");
     }
     else{
       loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
     }
-    if(!hists.bkg_hist->Integral()) return;
     *alpha = hists.dat_hist->Integral() / hists.bkg_hist->Integral(); //TODO
     loadsrc_csv(ins, args, hists.src_hist);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
