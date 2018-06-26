@@ -145,7 +145,8 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hi
 
   //Draw Residual
   c1->cd(3);
-  TRatioPlot* rp = new TRatioPlot(F1, hists.dat_hist, "diff");
+  F1->SetTitle("BB Residual");
+  TRatioPlot_BetterError* rp = new TRatioPlot_BetterError(F1, hists.dat_hist, "diff");
   rp->Draw();
 
   //Write Data
