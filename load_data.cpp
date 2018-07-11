@@ -273,20 +273,24 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
       }
     }
     //Offset cut
+    VACoordinatePair shower_coords = VACoordinatePair(
+      shower->fDirectionRA_J2000_Rad,
+      shower->fDirectionDec_J2000_Rad,
+      VACoordinates::J2000,
+      VACoordinates::Rad
+    );
+    VACoordinatePair tracking_coords = VACoordinatePair(
+      shower->fArrayTrackingRA_J2000_Rad,
+      shower->fArrayTrackingDec_J2000_Rad,
+      VACoordinates::J2000,
+      VACoordinates::Rad
+    );
+    double offset = tracking_coords.angularSeparation_Deg(shower_coords);
+    if(offset > 1.75){
+      cuts.off++;
+      cont = true;
+    }
     if(args.bin_vars & 16){
-      VACoordinatePair shower_coords = VACoordinatePair(
-        shower->fDirectionRA_J2000_Rad,
-        shower->fDirectionDec_J2000_Rad,
-        VACoordinates::J2000,
-        VACoordinates::Rad
-      );
-      VACoordinatePair tracking_coords = VACoordinatePair(
-        shower->fArrayTrackingRA_J2000_Rad,
-        shower->fArrayTrackingDec_J2000_Rad,
-        VACoordinates::J2000,
-        VACoordinates::Rad
-      );
-      double offset = tracking_coords.angularSeparation_Deg(shower_coords);
       if(offset > OBINS[ins.off + 1] || offset < OBINS[ins.off]){
         cuts.off++;
         cont = true;
