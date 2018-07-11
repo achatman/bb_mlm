@@ -157,7 +157,7 @@ double loadData_toy(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
   return livetime;
 }
 
-double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
+void cacheData_vegas(args_t args, std::string pathbase){
   std::stringstream excl_file;
   excl_file << pathbase << "_src.txt";
   //Check for source exclusion file
@@ -209,9 +209,14 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
   //Set up RA/DEC Hist
   TH2D* ra_dec = new TH2D("RA_DEC", "RA_DEC", 360, 0, 360, 360, 0, 360);
 
+  //Set up Cache file
+  std::stringstream cache_path;
+  cache_path << "Cache_" << pathbase << ".csv";
+  std::ofstream cache_file(cache_path.str().c_str());
+
   cuts_t cuts;
   timestamp;
-  std::cout << "Loading " << pathbase << std::endl;
+  std::cout << "Caching " << pathbase << std::endl;
   //Construct Histogram
   for(int i = 0; i < chain->GetEntries(); i++){
     bool cont = false;
@@ -231,74 +236,89 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
       cont = true;
     }
 
-    //Tel cut
-    if(args.bin_vars & 4){
-      auto tels_used = shower->fTelUsedInReconstruction;
-      int eventNTel = count(tels_used.begin(), tels_used.end(), 1);
-      if(eventNTel != TBINS[ins.tel]){
-        cuts.tel++;
-        cont = true;
-      }
-    }
-
-    //Energy cut
-    if(args.bin_vars & 2){
-      if(shower->fEnergy_GeV > EBINS[ins.e + 1] || shower->fEnergy_GeV < EBINS[ins.e]){
-        cuts.e++;
-        cont = true;
-      }
-    }
-
-    //ZA cut
-    if(args.bin_vars & 1){
-      Double_t ZA = 90.0 - (shower->fDirectionElevation_Rad * TMath::RadToDeg());
-      if(ZA > ZABINS[ins.za + 1] || ZA < ZABINS[ins.za]){
-        cuts.za++;
-        cont = true;
-      }
-    }
-
     //MSW cut
     if(shower->fMSW < MSWLOW || shower->fMSW > MSWHIGH){
       cuts.msw++;
       cont = true;
     }
 
-    //AZ cut
-    if(args.bin_vars & 8){
-      double az = shower->fDirectionAzimuth_Rad * TMath::RadToDeg();
-      if(az > AZBINS[ins.az + 1] || az < AZBINS[ins.az]){
-        cuts.az++;
-        cont = true;
-      }
-    }
-    //Offset cut
-    if(args.bin_vars & 16){
-      VACoordinatePair shower_coords = VACoordinatePair(
-        shower->fDirectionRA_J2000_Rad,
-        shower->fDirectionDec_J2000_Rad,
-        VACoordinates::J2000,
-        VACoordinates::Rad
-      );
-      VACoordinatePair tracking_coords = VACoordinatePair(
-        shower->fArrayTrackingRA_J2000_Rad,
-        shower->fArrayTrackingDec_J2000_Rad,
-        VACoordinates::J2000,
-        VACoordinates::Rad
-      );
-      double offset = tracking_coords.angularSeparation_Deg(shower_coords);
-      if(offset > OBINS[ins.off + 1] || offset < OBINS[ins.off]){
-        cuts.off++;
-        cont = true;
-      }
+    //Tel cut
+    auto tels_used = shower->fTelUsedInReconstruction;
+    int eventNTel = count(tels_used.begin(), tels_used.end(), 1);
+    if(eventNTel != 3 && eventNTel != 4){
+      cuts.tel++;
+      cont = true;
     }
 
+    //Energy cut
+    int e_bin = -1;
+    for(int e = 0; e < 4; e++){
+      if(shower->fEnergy_GeV < EBINS[e+1] && shower->fEnergy_GeV > EBINS[e]) e_bin = e;
+    }
+    if(e_bin == -1){
+      cuts.e++;
+      cont = true;
+    }
+
+    //ZA cut
+    int z_bin = -1;
+    double ZA = 90.0 - (shower->fDirectionElevation_Rad * TMath::RadToDeg());
+    for(int z = 0; z < 6; z++){
+      if(ZA < ZABINS[z+1] && ZA > ZABINS[z]) z_bin = z;
+    }
+    if(z_bin == -1){
+      cuts.za++;
+      cont = true;
+    }
+
+    //AZ cut
+    int a_bin = -1;
+    double az = shower->fDirectionAzimuth_Rad * TMath::RadToDeg();
+    for(int a = 0; a < 8; a++){
+      if(az < AZBINS[a+1] && az > AZBINS[a]) a_bin = a;
+    }
+    if(a_bin == -1){
+      cuts.az++;
+      cont = true;
+    }
+
+    //Offset cut
+    int o_bin = -1;
+    VACoordinatePair shower_coords = VACoordinatePair(
+      shower->fDirectionRA_J2000_Rad,
+      shower->fDirectionDec_J2000_Rad,
+      VACoordinates::J2000,
+      VACoordinates::Rad
+    );
+    VACoordinatePair tracking_coords = VACoordinatePair(
+      shower->fArrayTrackingRA_J2000_Rad,
+      shower->fArrayTrackingDec_J2000_Rad,
+      VACoordinates::J2000,
+      VACoordinates::Rad
+    );
+    double offset = tracking_coords.angularSeparation_Deg(shower_coords);
+    for(int o = 0; o < 8; o++){
+      if(offset < OBINS[o+1] && offset > OBINS[o]) o_bin = o;
+    }
+    if(o_bin == -1){
+      cuts.off++;
+      cont = true;
+    }
+
+
     if(cont) continue;
-    HIST->Fill(shower->fMSW);
-    if(HIST2D) HIST2D->Fill(shower->fMSW, shower->fMSL);
     ra_dec->Fill(eventRA, eventDec);
+
+    cache_file << shower->fMSW << ","
+               << shower->fMSL << ","
+               << z_bin << ","
+               << e_bin << ","
+               << eventNTel-2 << ","
+               << a_bin << ","
+               << o_bin << ","
+               << eventRA << ","
+               << eventDec << std::endl;
   }
-  cuts.passed = HIST->Integral();
   std::cout << cuts.passed << " passed cuts." << std::endl;
   std::cout << cuts.read << " cuts read." << std::endl;
   std::cout << cuts.src << " failed src cut." << std::endl;
@@ -309,11 +329,10 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
   std::cout << cuts.az << " failed az cut." << std::endl;
   std::cout << cuts.off << " failed off cut." << std::endl;
 
-  if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
-  if(pathbase == "bkg"){
+  if(args.output & 8) print_cuts(pathbase, &cuts, "Cache");
+  if(pathbase != "data"){
     bkg_centers.push_back(std::make_pair(ra_dec->GetMean(1), ra_dec->GetMean(2)));
   }
-  return 1;
 }
 
 void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
@@ -350,6 +369,89 @@ void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIS
       }
     }
   }
+}
+
+double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
+  std::stringstream cache_path;
+  cache_path << "Cache_" << pathbase << ".csv";
+  std::ifstream cache_file(cache_path.str().c_str());
+  if(!cache_file.good()){
+    cacheData_vegas(args, pathbase);
+    cache_file.open(cache_path.str().c_str());
+  }
+
+  std::cout << "Loading " << pathbase << std::endl;
+
+  std::string line;
+  std::vector<std::string> line_fields;
+  cuts_t cuts;
+  while(std::getline(cache_file, line)){
+    cuts.read++;
+    bool cont = false;
+    boost::split(line_fields, line, boost::is_any_of(","));
+    std::vector<double> fields;
+    for(auto it : line_fields){
+      fields.push_back(std::stod(it));
+    }
+    line_fields.clear();
+
+    //Zenith cut
+    if(args.bin_vars & 1){
+      if(fields[2] != ins.za){
+        cuts.za++;
+        cont = true;
+      }
+    }
+
+    //Energy cut
+    if(args.bin_vars & 2){
+      if(fields[3] != ins.e){
+        cuts.e++;
+        cont = true;
+      }
+    }
+
+    //Tel cut
+    if(args.bin_vars & 4){
+      if(fields[4] != ins.tel){
+        cuts.tel++;
+        cont = true;
+      }
+    }
+
+    //Azimuth cut
+    if(args.bin_vars & 8){
+      if(fields[5] != ins.az){
+        cuts.az++;
+        cont = true;
+      }
+    }
+
+    //Offset cut
+    if(args.bin_vars & 16){
+      if(fields[6] != ins.off){
+        cuts.off++;
+        cont = true;
+      }
+    }
+
+    if(cont) continue;
+    HIST->Fill(fields[0]);
+    if(HIST2D) HIST2D->Fill(fields[0], fields[1]);
+  }
+  cuts.passed = HIST->Integral();
+  std::cout << cuts.passed << " passed cuts." << std::endl;
+  std::cout << cuts.read << " cuts read." << std::endl;
+  std::cout << cuts.src << " failed src cut." << std::endl;
+  std::cout << cuts.tel << " failed tel cut." << std::endl;
+  std::cout << cuts.e << " failed energy cut." << std::endl;
+  std::cout << cuts.za << " failed za cut." << std::endl;
+  std::cout << cuts.msw << " failed msw cut." << std::endl;
+  std::cout << cuts.az << " failed az cut." << std::endl;
+  std::cout << cuts.off << " failed off cut." << std::endl;
+
+  if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
+  return 1;
 }
 
 void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
