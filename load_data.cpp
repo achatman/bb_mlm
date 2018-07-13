@@ -217,7 +217,16 @@ void cacheData_vegas(args_t args, std::string pathbase){
   cuts_t cuts;
   timestamp;
   std::cout << "Caching " << pathbase << std::endl;
-  //Construct Histogram
+  //Cache events
+  int bin_counts[6][4][2];
+  for(int a = 0; a < 6; a++){
+    for(int b = 0; b < 4; b++){
+      for(int c = 0; c < 2; c++){
+        bin_counts[a][b][c] = 0;
+      }
+    }
+  }
+
   for(int i = 0; i < chain->GetEntries(); i++){
     bool cont = false;
     chain->GetEntry(i);
@@ -241,6 +250,8 @@ void cacheData_vegas(args_t args, std::string pathbase){
       cuts.msw++;
       cont = true;
     }
+
+    bool skip = cont;
 
     //Tel cut
     auto tels_used = shower->fTelUsedInReconstruction;
@@ -305,7 +316,7 @@ void cacheData_vegas(args_t args, std::string pathbase){
       cont = true;
     }
 
-
+    if(!skip) bin_counts[z_bin][e_bin][o_bin]++;
     if(cont) continue;
     ra_dec->Fill(eventRA, eventDec);
 
@@ -313,7 +324,7 @@ void cacheData_vegas(args_t args, std::string pathbase){
                << shower->fMSL << ","
                << z_bin << ","
                << e_bin << ","
-               << eventNTel-2 << ","
+               << eventNTel-3 << ","
                << a_bin << ","
                << o_bin << ","
                << eventRA << ","
@@ -328,6 +339,14 @@ void cacheData_vegas(args_t args, std::string pathbase){
   std::cout << cuts.msw << " failed msw cut." << std::endl;
   std::cout << cuts.az << " failed az cut." << std::endl;
   std::cout << cuts.off << " failed off cut." << std::endl;
+
+  for(int a = 0; a < 6; a++){
+    for(int b = 0; b < 4; b++){
+      for(int c = 0; c < 2; c++){
+        std::cout << a << b << c << " " << bin_counts[a][b][c] << std::endl;
+      }
+    }
+  }
 
   if(args.output & 8) print_cuts(pathbase, &cuts, "Cache");
   if(pathbase != "data"){
@@ -397,7 +416,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
 
     //Zenith cut
     if(args.bin_vars & 1){
-      if(fields[2] != ins.za){
+      if((int)fields[2] != ins.za){
         cuts.za++;
         cont = true;
       }
@@ -405,7 +424,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
 
     //Energy cut
     if(args.bin_vars & 2){
-      if(fields[3] != ins.e){
+      if((int)fields[3] != ins.e){
         cuts.e++;
         cont = true;
       }
@@ -413,7 +432,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
 
     //Tel cut
     if(args.bin_vars & 4){
-      if(fields[4] != ins.tel){
+      if((int)fields[4] != ins.tel){
         cuts.tel++;
         cont = true;
       }
@@ -421,7 +440,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
 
     //Azimuth cut
     if(args.bin_vars & 8){
-      if(fields[5] != ins.az){
+      if((int)fields[5] != ins.az){
         cuts.az++;
         cont = true;
       }
@@ -429,7 +448,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
 
     //Offset cut
     if(args.bin_vars & 16){
-      if(fields[6] != ins.off){
+      if((int)fields[6] != ins.off){
         cuts.off++;
         cont = true;
       }
