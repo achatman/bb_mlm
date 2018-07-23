@@ -73,9 +73,9 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hi
   srchist->Scale(hists.dat_hist->Integral() / hists.src_hist->Integral());
 
   //Canvas set up
-  TH1D* F0 = new TH1D("F0Hist", "Std Fit", NBIN, MSWLOW, MSWHIGH);
-  TH1D* F1 = new TH1D("F1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
-  TH1D* B1 = new TH1D("B1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
+  TH1D* F0 = new TH1D("F0Hist", "Std Fit", NBIN, PARLOW, PARHIGH);
+  TH1D* F1 = new TH1D("F1Hist", "BB Fit", NBIN, PARLOW, PARHIGH);
+  TH1D* B1 = new TH1D("B1Hist", "BB Fit", NBIN, PARLOW, PARHIGH);
   TCanvas *c1 = new TCanvas("",hists.outpath.c_str(),1600,1600);
   c1->Divide(2,2);
 

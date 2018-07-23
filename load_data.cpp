@@ -106,7 +106,7 @@ double loadData_toy(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
       }
 
       //MSW Cut
-      if(*msw < MSWLOW || *msw > MSWHIGH){
+      if(*msw < MSWBIN[0] || *msw > MSWBIN[1]){
         cuts.msw++;
         continue;
       }
@@ -259,7 +259,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
     }
 
     //MSW cut
-    if(shower->fMSW < MSWLOW || shower->fMSW > MSWHIGH){
+    if(shower->fMSW < MSWBIN[0] || shower->fMSW > MSWBIN[1]){
       cuts.msw++;
       cont = true;
     }
@@ -356,6 +356,201 @@ void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIS
   }
 }
 
+double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
+  std::stringstream excl_file;
+  excl_file << pathbase << "_src.txt";
+  //Check for source exclusion file
+  bool excl_exists = true;
+  if(access(excl_file.str().c_str(), F_OK)){
+    std::cerr << "No source exclusion file found at "
+    << excl_file.str()
+    << ". This may cause problems."
+    << std::endl;
+    excl_exists = false;
+  }
+  typedef struct SourceCut
+  {
+    VACoordinatePair coords;
+    double cut_rad;
+    SourceCut(std::vector<std::string> line_in) :
+    coords(std::stod(line_in[1]),std::stod(line_in[2]),VACoordinates::J2000,VACoordinates::Deg),
+    cut_rad(std::stod(line_in[3]))
+    {}
+
+    bool InsideExclRadius(VACoordinatePair evt_coords) {
+      double dist = coords.angularSeparation_Deg(evt_coords);
+      return (dist < cut_rad);
+    }
+  } SourceCut_t;
+
+  std::vector<SourceCut_t> sourcecuts;
+  std::string line;
+  std::vector<std::string> line_fields;
+  std::ifstream srclist(excl_file.str().c_str());
+  while(std::getline(srclist, line)){
+    boost::split(line_fields, line, boost::is_any_of(","));
+    sourcecuts.emplace_back(line_fields);
+    line_fields.clear();
+  }
+
+  //Setup data chains
+  std::stringstream infile;
+  infile << pathbase << ".list";
+  TChain* chain = new TChain("SelectedEvents/CombinedEventsTree");
+  std::ifstream flist(infile.str().c_str());
+
+  while(std::getline(flist, line)){
+    chain->Add(line.c_str());
+  }
+  VAShowerData* shower = new VAShowerData;
+  //chain->SetBranchAddress("S", &shower);
+
+  //Set up RA/DEC Hist
+  TH2D* ra_dec = new TH2D("RA_DEC", "RA_DEC", 360, 0, 360, 360, 0, 360);
+
+  cuts_t cuts;
+  timestamp;
+  std::cout << "Loading " << pathbase << std::endl;
+  int stage5_cuts = 0
+  for(int i = 0; i < chain->GetEntries(); i++){
+    chain->GetEntry(i);
+    //Make cuts that should have been done in stage5
+    //ThetaSquare Cut
+    if(shower->S.fTheta2_Deg2 < 0 || shower->S.fTheta2_Deg2 > 129600){
+      stage5_cuts++;
+      continue;
+    }
+
+    //Impact Distance Cut
+    if(shower->S.fAvImpactDist < 0 || shower->S.fAvImpactDist > 1200){
+      stage5_cuts++;
+      continue;
+    }
+
+    //MSL Cut
+    if(shower->S.fMSL < 0.05 || shower->S.fMSL > 1.3){
+      stage5_cuts++;
+      continue;
+    }
+
+    //Shower Max Height Cut
+    if(shower->S.ShowerMaxHeight_KM < 7 || shower->S.ShowerMaxHeight_KM > 100){
+      stage5_cuts++;
+      continue;
+    }
+
+    //Energy Cut
+    if(shower->S.fEnergy_GeV < 0 || shower->S.fEnergy_GeV > 100000){
+      stage5_cuts++;
+      continue;
+    }
+
+    //Normal Cuts
+    bool cont = false;
+    cuts.read++;
+    //Source Cut
+    Double_t eventRA = shower->S.fDirectionRA_J2000_Rad * TMath::RadToDeg();
+    Double_t eventDec = shower->S.fDirectionDec_J2000_Rad * TMath::RadToDeg();
+    VACoordinatePair eventCoord = VACoordinatePair(eventRA,eventDec,VACoordinates::J2000,VACoordinates::Deg);
+    bool fail_src_cuts;
+    for(auto &it: sourcecuts){
+      fail_src_cuts = it.InsideExclRadius(eventCoord);
+      if(fail_src_cuts) break;
+    }
+    if(fail_src_cuts && excl_exists){
+      cuts.src++;
+      cont = true;
+    }
+
+    //Tel cut
+    if(args.bin_vars & 4){
+      auto tels_used = shower->S.fTelUsedInReconstruction;
+      int eventNTel = count(tels_used.begin(), tels_used.end(), 1);
+      if(eventNTel != TBINS[ins.tel]){
+        cuts.tel++;
+        cont = true;
+      }
+    }
+
+    //Energy cut
+    if(args.bin_vars & 2){
+      if(shower->S.fEnergy_GeV > EBINS[ins.e + 1] || shower->S.fEnergy_GeV < EBINS[ins.e]){
+        cuts.e++;
+        cont = true;
+      }
+    }
+
+    //ZA cut
+    if(args.bin_vars & 1){
+      Double_t ZA = 90.0 - (shower->S.fDirectionElevation_Rad * TMath::RadToDeg());
+      if(ZA > ZABINS[ins.za + 1] || ZA < ZABINS[ins.za]){
+        cuts.za++;
+        cont = true;
+      }
+    }
+
+    //MSW cut
+    if(shower->S.fMSW < MSWBIN[0] || shower->S.fMSW > MSWBIN[1]){
+      cuts.msw++;
+      cont = true;
+    }
+
+    //AZ cut
+    if(args.bin_vars & 8){
+      double az = shower->S.fDirectionAzimuth_Rad * TMath::RadToDeg();
+      if(az > AZBINS[ins.az + 1] || az < AZBINS[ins.az]){
+        cuts.az++;
+        cont = true;
+      }
+    }
+    //Offset cut
+    VACoordinatePair shower_coords = VACoordinatePair(
+      shower->S.fDirectionRA_J2000_Rad,
+      shower->S.fDirectionDec_J2000_Rad,
+      VACoordinates::J2000,
+      VACoordinates::Rad
+    );
+    VACoordinatePair tracking_coords = VACoordinatePair(
+      shower->S.fArrayTrackingRA_J2000_Rad,
+      shower->S.fArrayTrackingDec_J2000_Rad,
+      VACoordinates::J2000,
+      VACoordinates::Rad
+    );
+    double offset = tracking_coords.angularSeparation_Deg(shower_coords);
+    if(offset > 1.75){
+      cuts.off++;
+      cont = true;
+    }
+    if(args.bin_vars & 16){
+      if(offset > OBINS[ins.off + 1] || offset < OBINS[ins.off]){
+        cuts.off++;
+        cont = true;
+      }
+    }
+
+    if(cont) continue;
+    HIST->Fill(shower->S.fMSW);
+    if(HIST2D) HIST2D->Fill(shower->S.fMSW, shower->S.fMSL);
+    ra_dec->Fill(eventRA, eventDec);
+  }
+  cuts.passed = HIST->Integral();
+  std::cout << cuts.passed << " passed cuts." << std::endl;
+  std::cout << cuts.read << " cuts read." << std::endl;
+  std::cout << cuts.src << " failed src cut." << std::endl;
+  std::cout << cuts.tel << " failed tel cut." << std::endl;
+  std::cout << cuts.e << " failed energy cut." << std::endl;
+  std::cout << cuts.za << " failed za cut." << std::endl;
+  std::cout << cuts.msw << " failed msw cut." << std::endl;
+  std::cout << cuts.az << " failed az cut." << std::endl;
+  std::cout << cuts.off << " failed off cut." << std::endl;
+
+  if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
+  if(pathbase == "bkg"){
+    bkg_centers.push_back(std::make_pair(ra_dec->GetMean(1), ra_dec->GetMean(2)));
+  }
+  return 1;
+}
+
 void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
   OUTSTR = hists.outpath;
   if(args.format == Format_t::Toy){
@@ -364,17 +559,17 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
     std::cout << "Histograms loaded from Toy format." << std::endl;
   }
   else if(args.format == Format_t::Vegas){
-    loadData_vegas(ins, args, "data", hists.dat_hist, hists.dat_2hist);
+    loadData_bdt(ins, args, "data", hists.dat_hist, hists.dat_2hist);
     //This is not ideal. (Slightly better now)
     if(!access("bkg_sources.list", F_OK)){
       std::ifstream flist("bkg_sources.list");
       std::string line;
       while(std::getline(flist, line)){
-        loadData_vegas(ins, args, line, hists.bkg_hist, hists.bkg_2hist);
+        loadData_bdt(ins, args, line, hists.bkg_hist, hists.bkg_2hist);
       }
     }
     else{
-      loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
+      loadData_bdt(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
     }
     *alpha = hists.dat_hist->Integral() / hists.bkg_hist->Integral(); //TODO
     loadsrc_csv(ins, args, hists.src_hist);

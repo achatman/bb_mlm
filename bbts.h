@@ -42,8 +42,8 @@
 }
 #define PRINTSPACE std::left << std::setw(PW)
 #define NBIN 20
-#define MSWLOW 0.8
-#define MSWHIGH 1.3
+#define PARLOW -1
+#define PARHIGH 1
 #define PW 15
 
 extern double ZABINS[];
@@ -51,6 +51,7 @@ extern double EBINS[];
 extern int TBINS[];
 extern double AZBINS[];
 extern double OBINS[];
+extern double MSWBIN[];
 
 enum class Format_t{Toy, Csv, Vegas, Sample};
 struct args_t {

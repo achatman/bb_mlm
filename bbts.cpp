@@ -17,6 +17,7 @@ double EBINS[] = {316,630,1259,2512,5012};
 int TBINS[] = {3,4};
 double AZBINS[] = {0,45,90,135,180,225,270,315,360};
 double OBINS[] = {0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0};
+double MSWBIN = {0.8, 1.3};
 
 
 //helper function declarations
@@ -482,8 +483,8 @@ void bidirectional(args_t *args, indices_t indices, double alpha){
 
   //Plot Forward Fit
   c1->cd(1);
-  TH1D* dat_fit_forward = new TH1D("DFit_For", "Forward", NBIN, MSWLOW, MSWHIGH);
-  TH1D* bkg_fit_forward = new TH1D("BFit_For", "Forward", NBIN, MSWLOW, MSWHIGH);
+  TH1D* dat_fit_forward = new TH1D("DFit_For", "Forward", NBIN, PARLOW, PARHIGH);
+  TH1D* bkg_fit_forward = new TH1D("BFit_For", "Forward", NBIN, PARLOW, PARHIGH);
   dat_fit_forward->SetLineColor(4);
   bkg_fit_forward->SetLineColor(6);
   dat_fit_forward->SetStats(false);
@@ -516,8 +517,8 @@ void bidirectional(args_t *args, indices_t indices, double alpha){
 
   //Plot Backward Fit
   c1->cd(4);
-  TH1D* dat_fit_back = new TH1D("DFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
-  TH1D* bkg_fit_back = new TH1D("BFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
+  TH1D* dat_fit_back = new TH1D("DFit_Back", "Backward", NBIN, PARLOW, PARHIGH);
+  TH1D* bkg_fit_back = new TH1D("BFit_Back", "Backward", NBIN, PARLOW, PARHIGH);
   dat_fit_back->SetLineColor(4);
   bkg_fit_back->SetLineColor(6);
   dat_fit_back->SetStats(false);
@@ -704,12 +705,12 @@ int main(int argc, char* argv[]){
           for(indices.off = 0; indices.off < 8; indices.off++){
             if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
-            DAT_HIST = new TH1D("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
-            BKG_HIST = new TH1D("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
-            SRC_HIST = new TH1D("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
+            DAT_HIST = new TH1D("DataHist", "Data", NBIN, PARLOW, PARHIGH);
+            BKG_HIST = new TH1D("BkgHist", "BKG", NBIN, PARLOW, PARHIGH);
+            SRC_HIST = new TH1D("SrcHist", "SRC", NBIN, PARLOW, PARHIGH);
             if(args->graphics & 4){
-              DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
-              BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSWvsMSL", NBIN, PARLOW, PARHIGH, NBIN, PARLOW, PARHIGH);
+              BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSWvsMSL", NBIN, PARLOW, PARHIGH, NBIN, PARLOW, PARHIGH);
             }
             hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH, LONGOUTPATH};
             double alpha = 1;
