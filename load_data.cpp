@@ -406,7 +406,7 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
   std::cout << "Loading " << pathbase << std::endl;
   int stage5_cuts = 0;
   TFile *f;
-  while(std::getline(infile, line)){
+  while(std::getline(flist, line)){
     f = TFile::Open(line.c_str());
     if(!f){
       std::cout << "Cannot open " << line << std::endl;
