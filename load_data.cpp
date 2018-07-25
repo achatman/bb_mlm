@@ -194,17 +194,10 @@ void cacheData_vegas(args_t args, std::string pathbase){
     line_fields.clear();
   }
 
-  //Setup data chains
+  //Setup flist
   std::stringstream infile;
   infile << pathbase << ".list";
-  TChain* chain = new TChain("SelectedEvents/CombinedEventsTree");
   std::ifstream flist(infile.str().c_str());
-
-  while(std::getline(flist, line)){
-    chain->Add(line.c_str());
-  }
-  VAShowerData* shower = new VAShowerData;
-  chain->SetBranchAddress("S", &shower);
 
   //Set up RA/DEC Hist
   TH2D* ra_dec = new TH2D("RA_DEC", "RA_DEC", 360, 0, 360, 360, 0, 360);
@@ -227,108 +220,129 @@ void cacheData_vegas(args_t args, std::string pathbase){
     }
   }
 
-  for(int i = 0; i < chain->GetEntries(); i++){
-    bool cont = false;
-    chain->GetEntry(i);
-    cuts.read++;
-    //Source Cut
-    Double_t eventRA = shower->fDirectionRA_J2000_Rad * TMath::RadToDeg();
-    Double_t eventDec = shower->fDirectionDec_J2000_Rad * TMath::RadToDeg();
-    VACoordinatePair eventCoord = VACoordinatePair(eventRA,eventDec,VACoordinates::J2000,VACoordinates::Deg);
-    bool fail_src_cuts;
-    for(auto &it: sourcecuts){
-      fail_src_cuts = it.InsideExclRadius(eventCoord);
-      if(fail_src_cuts) break;
-    }
-    if(fail_src_cuts && excl_exists){
-      cuts.src++;
-      cont = true;
+  TFile *f;
+  while(std::getline(flist, line)){
+    f = TFile::Open(line.c_str());
+    if(!f){
+      std::cout << "Cannot open " << line << std::endl;
+      continue;
     }
 
-    //MSW cut
-    if(shower->fMSW < MSWLOW || shower->fMSW > MSWHIGH){
-      cuts.msw++;
-      cont = true;
-    }
+    TTreeReader reader("SelectedEvents/CombinedEventsTree", f);
+    TTreeReaderValue<VAShowerData> showerdata(reader, "S");
 
-    bool skip = cont;
+    while(reader.Next()){
+      bool cont = false;
+      cuts.read++;
+      //Source Cut
+      Double_t eventRA = shower->fDirectionRA_J2000_Rad * TMath::RadToDeg();
+      Double_t eventDec = shower->fDirectionDec_J2000_Rad * TMath::RadToDeg();
+      VACoordinatePair eventCoord = VACoordinatePair(eventRA,eventDec,VACoordinates::J2000,VACoordinates::Deg);
+      bool fail_src_cuts;
+      for(auto &it: sourcecuts){
+        fail_src_cuts = it.InsideExclRadius(eventCoord);
+        if(fail_src_cuts) break;
+      }
+      if(fail_src_cuts && excl_exists){
+        cuts.src++;
+        cont = true;
+      }
 
-    //Tel cut
-    auto tels_used = shower->fTelUsedInReconstruction;
-    int eventNTel = count(tels_used.begin(), tels_used.end(), 1);
-    if(eventNTel != 3 && eventNTel != 4){
-      cuts.tel++;
-      cont = true;
-    }
+      //Assign Cut Variables
+      double msw = shower->fMSW;
+      auto tels_used = shower->fTelUsedInReconstruction;
+      int tels = count(tels_used.begin(), tels_used.end(), 1);
+      double energy = shower->fEnergy_GeV;
+      double za = 90.0 - (shower->fDirectionElevation_Rad * TMath::RadToDeg());
+      double az = shower->fDirectionAzimuth_Rad * TMath::RadToDeg();
+      VACoordinatePair shower_coords = VACoordinatePair(
+        shower->fDirectionRA_J2000_Rad,
+        shower->fDirectionDec_J2000_Rad,
+        VACoordinates::J2000,
+        VACoordinates::Rad
+      );
+      VACoordinatePair tracking_coords = VACoordinatePair(
+        shower->fArrayTrackingRA_J2000_Rad,
+        shower->fArrayTrackingDec_J2000_Rad,
+        VACoordinates::J2000,
+        VACoordinates::Rad
+      );
+      double offset = tracking_coords.angularSeparation_Deg(shower_coords);
 
-    //Energy cut
-    int e_bin = -1;
-    for(int e = 0; e < 4; e++){
-      if(shower->fEnergy_GeV < EBINS[e+1] && shower->fEnergy_GeV > EBINS[e]) e_bin = e;
-    }
-    if(e_bin == -1){
-      cuts.e++;
-      cont = true;
-    }
+      //MSW cut
+      if(msw < MSWLOW || msw > MSWHIGH){
+        cuts.msw++;
+        cont = true;
+      }
 
-    //ZA cut
-    int z_bin = -1;
-    double ZA = 90.0 - (shower->fDirectionElevation_Rad * TMath::RadToDeg());
-    for(int z = 0; z < 6; z++){
-      if(ZA < ZABINS[z+1] && ZA > ZABINS[z]) z_bin = z;
-    }
-    if(z_bin == -1){
-      cuts.za++;
-      cont = true;
-    }
+      //Tel cut
+      if(tels != 3 && tels != 4){
+        cuts.tel++;
+        cont = true;
+      }
 
-    //AZ cut
-    int a_bin = -1;
-    double az = shower->fDirectionAzimuth_Rad * TMath::RadToDeg();
-    for(int a = 0; a < 8; a++){
-      if(az < AZBINS[a+1] && az > AZBINS[a]) a_bin = a;
-    }
-    if(a_bin == -1){
-      cuts.az++;
-      cont = true;
-    }
+      //Energy cut
+      int e_bin = -1;
+      for(int e = 0; e < 4; e++){
+        if(energy < EBINS[e+1] && energy > EBINS[e]){
+          e_bin = e;
+        }
+      }
+      if(e_bin == -1){
+        cuts.e++;
+        cont = true;
+      }
 
-    //Offset cut
-    int o_bin = -1;
-    VACoordinatePair shower_coords = VACoordinatePair(
-      shower->fDirectionRA_J2000_Rad,
-      shower->fDirectionDec_J2000_Rad,
-      VACoordinates::J2000,
-      VACoordinates::Rad
-    );
-    VACoordinatePair tracking_coords = VACoordinatePair(
-      shower->fArrayTrackingRA_J2000_Rad,
-      shower->fArrayTrackingDec_J2000_Rad,
-      VACoordinates::J2000,
-      VACoordinates::Rad
-    );
-    double offset = tracking_coords.angularSeparation_Deg(shower_coords);
-    for(int o = 0; o < 8; o++){
-      if(offset < OBINS[o+1] && offset > OBINS[o]) o_bin = o;
-    }
-    if(o_bin == -1){
-      cuts.off++;
-      cont = true;
-    }
+      //ZA cut
+      int z_bin = -1;
+      for(int z = 0; z < 6; z++){
+        if(za < ZABINS[z+1] && za > ZABINS[z]){
+          z_bin = z;
+        }
+      }
+      if(z_bin == -1){
+        cuts.za++;
+        cont = true;
+      }
 
-    if(!skip) bin_counts[z_bin][e_bin][o_bin]++;
-    if(cont) continue;
-    ra_dec->Fill(eventRA, eventDec);
+      //AZ cut
+      int a_bin = -1;
+      for(int a = 0; a < 8; a++){
+        if(az < AZBINS[a+1] && az > AZBINS[a]){
+          a_bin = a;
+        }
+      }
+      if(a_bin == -1){
+        cuts.az++;
+        cont = true;
+      }
 
-    cache_file << shower->fMSW << ","
-               << shower->fMSL << ","
-               << z_bin << ","
-               << e_bin << ","
-               << eventNTel-3 << ","
-               << a_bin << ","
-               << o_bin << ","
-               << eventRA << ","
-               << eventDec << std::endl;
+      //Offset cut
+      int o_bin = -1;
+      for(int o = 0; o < 8; o++){
+        if(offset < OBINS[o+1] && offset > OBINS[o]){
+          o_bin = o;
+        }
+      }
+      if(o_bin == -1){
+        cuts.off++;
+        cont = true;
+      }
+
+      if(cont) continue;
+      ra_dec->Fill(eventRA, eventDec);
+      bin_counts[z_bin][e_bin][o_bin]++;
+
+      cache_file << shower->fMSW << ","
+                << shower->fMSL << ","
+                << z_bin << ","
+                << e_bin << ","
+                << eventNTel-3 << ","
+                << a_bin << ","
+                << o_bin << ","
+                << eventRA << ","
+                << eventDec << std::endl;
+    }
   }
   std::cout << cuts.passed << " passed cuts." << std::endl;
   std::cout << cuts.read << " cuts read." << std::endl;
@@ -352,6 +366,7 @@ void cacheData_vegas(args_t args, std::string pathbase){
   if(pathbase != "data"){
     bkg_centers.push_back(std::make_pair(ra_dec->GetMean(1), ra_dec->GetMean(2)));
   }
+  cache_file.close();
 }
 
 void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
