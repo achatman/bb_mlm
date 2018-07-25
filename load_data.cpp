@@ -431,18 +431,6 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
         continue;
       }
 
-      //MSL Cut
-      if(shower->fMSL < 0.05 || shower->fMSL > 1.3){
-        stage5_cuts++;
-        continue;
-      }
-
-      //Shower Max Height Cut
-      if(shower->fShowerMaxHeight_KM < 7 || shower->fShowerMaxHeight_KM > 100){
-        stage5_cuts++;
-        continue;
-      }
-
       //Energy Cut
       if(shower->fEnergy_GeV < 0 || shower->fEnergy_GeV > 100000){
         stage5_cuts++;
@@ -463,6 +451,12 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
       }
       if(fail_src_cuts && excl_exists){
         cuts.src++;
+        cont = true;
+      }
+
+      //BDT cut
+      if(*bdtscore < .6){
+        cuts.msw++;
         cont = true;
       }
 
@@ -491,12 +485,6 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
           cuts.za++;
           cont = true;
         }
-      }
-
-      //MSW cut
-      if(shower->fMSW < MSWBIN[0] || shower->fMSW > MSWBIN[1]){
-        cuts.msw++;
-        cont = true;
       }
 
       //AZ cut
@@ -545,7 +533,7 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
   std::cout << cuts.tel << " failed tel cut." << std::endl;
   std::cout << cuts.e << " failed energy cut." << std::endl;
   std::cout << cuts.za << " failed za cut." << std::endl;
-  std::cout << cuts.msw << " failed msw cut." << std::endl;
+  std::cout << cuts.msw << " failed bdt cut." << std::endl;
   std::cout << cuts.az << " failed az cut." << std::endl;
   std::cout << cuts.off << " failed off cut." << std::endl;
 
