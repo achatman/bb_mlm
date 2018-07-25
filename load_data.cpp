@@ -221,8 +221,8 @@ void cacheData_vegas(args_t args, std::string pathbase){
   }
 
   std::ofstream temp_file;
-  if(pathbase == 'data'){
-    temp_file.open('data_check.csv');
+  if(pathbase == "data"){
+    temp_file.open("data_check.csv");
   }
 
   TFile *f;
@@ -234,7 +234,7 @@ void cacheData_vegas(args_t args, std::string pathbase){
     }
 
     TTreeReader reader("SelectedEvents/CombinedEventsTree", f);
-    TTreeReaderValue<VAShowerData> showerdata(reader, "S");
+    TTreeReaderValue<VAShowerData> shower(reader, "S");
 
     while(reader.Next()){
       bool cont = false;
