@@ -393,17 +393,10 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
     line_fields.clear();
   }
 
-  //Setup data chains
+  //Setup file reader
   std::stringstream infile;
   infile << pathbase << ".list";
-  TChain* chain = new TChain("SelectedEvents/CombinedEventsTree");
   std::ifstream flist(infile.str().c_str());
-
-  while(std::getline(flist, line)){
-    chain->Add(line.c_str());
-  }
-  VAShowerData* shower = new VAShowerData;
-  //chain->SetBranchAddress("S", &shower);
 
   //Set up RA/DEC Hist
   TH2D* ra_dec = new TH2D("RA_DEC", "RA_DEC", 360, 0, 360, 360, 0, 360);
@@ -412,126 +405,137 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
   timestamp;
   std::cout << "Loading " << pathbase << std::endl;
   int stage5_cuts = 0
-  for(int i = 0; i < chain->GetEntries(); i++){
-    chain->GetEntry(i);
-    //Make cuts that should have been done in stage5
-    //ThetaSquare Cut
-    if(shower->S.fTheta2_Deg2 < 0 || shower->S.fTheta2_Deg2 > 129600){
-      stage5_cuts++;
+  TFile *f;
+  while(std::getline(infile, line)){
+    f = TFile::Open(line.c_str());
+    if(!f){
+      std::cout << "Cannot open " << line << std::endl;
       continue;
     }
 
-    //Impact Distance Cut
-    if(shower->S.fAvImpactDist < 0 || shower->S.fAvImpactDist > 1200){
-      stage5_cuts++;
-      continue;
-    }
+    TTreeReader reader("SelectedEvents/CombinedEventsTree", f);
+    TTreeReaderValue<double> bdtscore(reader, "BDTScore");
+    TTreeReaderValue<VAShowerData> shower(reader, "S");
 
-    //MSL Cut
-    if(shower->S.fMSL < 0.05 || shower->S.fMSL > 1.3){
-      stage5_cuts++;
-      continue;
-    }
+    while(reader.Next()){
+      //Make cuts that should have been done in stage5
+      //ThetaSquare Cut
+      if(shower->fTheta2_Deg2 < 0 || shower->fTheta2_Deg2 > 129600){
+        stage5_cuts++;
+        continue;
+      }
 
-    //Shower Max Height Cut
-    if(shower->S.ShowerMaxHeight_KM < 7 || shower->S.ShowerMaxHeight_KM > 100){
-      stage5_cuts++;
-      continue;
-    }
+      //Impact Distance Cut
+      if(shower->fAvImpactDist < 0 || shower->fAvImpactDist > 1200){
+        stage5_cuts++;
+        continue;
+      }
 
-    //Energy Cut
-    if(shower->S.fEnergy_GeV < 0 || shower->S.fEnergy_GeV > 100000){
-      stage5_cuts++;
-      continue;
-    }
+      //MSL Cut
+      if(shower->fMSL < 0.05 || shower->fMSL > 1.3){
+        stage5_cuts++;
+        continue;
+      }
 
-    //Normal Cuts
-    bool cont = false;
-    cuts.read++;
-    //Source Cut
-    Double_t eventRA = shower->S.fDirectionRA_J2000_Rad * TMath::RadToDeg();
-    Double_t eventDec = shower->S.fDirectionDec_J2000_Rad * TMath::RadToDeg();
-    VACoordinatePair eventCoord = VACoordinatePair(eventRA,eventDec,VACoordinates::J2000,VACoordinates::Deg);
-    bool fail_src_cuts;
-    for(auto &it: sourcecuts){
-      fail_src_cuts = it.InsideExclRadius(eventCoord);
-      if(fail_src_cuts) break;
-    }
-    if(fail_src_cuts && excl_exists){
-      cuts.src++;
-      cont = true;
-    }
+      //Shower Max Height Cut
+      if(shower->ShowerMaxHeight_KM < 7 || shower->ShowerMaxHeight_KM > 100){
+        stage5_cuts++;
+        continue;
+      }
 
-    //Tel cut
-    if(args.bin_vars & 4){
-      auto tels_used = shower->S.fTelUsedInReconstruction;
-      int eventNTel = count(tels_used.begin(), tels_used.end(), 1);
-      if(eventNTel != TBINS[ins.tel]){
-        cuts.tel++;
+      //Energy Cut
+      if(shower->fEnergy_GeV < 0 || shower->fEnergy_GeV > 100000){
+        stage5_cuts++;
+        continue;
+      }
+
+      //Normal Cuts
+      bool cont = false;
+      cuts.read++;
+      //Source Cut
+      Double_t eventRA = shower->fDirectionRA_J2000_Rad * TMath::RadToDeg();
+      Double_t eventDec = shower->fDirectionDec_J2000_Rad * TMath::RadToDeg();
+      VACoordinatePair eventCoord = VACoordinatePair(eventRA,eventDec,VACoordinates::J2000,VACoordinates::Deg);
+      bool fail_src_cuts;
+      for(auto &it: sourcecuts){
+        fail_src_cuts = it.InsideExclRadius(eventCoord);
+        if(fail_src_cuts) break;
+      }
+      if(fail_src_cuts && excl_exists){
+        cuts.src++;
         cont = true;
       }
-    }
 
-    //Energy cut
-    if(args.bin_vars & 2){
-      if(shower->S.fEnergy_GeV > EBINS[ins.e + 1] || shower->S.fEnergy_GeV < EBINS[ins.e]){
-        cuts.e++;
+      //Tel cut
+      if(args.bin_vars & 4){
+        auto tels_used = shower->fTelUsedInReconstruction;
+        int eventNTel = count(tels_used.begin(), tels_used.end(), 1);
+        if(eventNTel != TBINS[ins.tel]){
+          cuts.tel++;
+          cont = true;
+        }
+      }
+
+      //Energy cut
+      if(args.bin_vars & 2){
+        if(shower->fEnergy_GeV > EBINS[ins.e + 1] || shower->fEnergy_GeV < EBINS[ins.e]){
+          cuts.e++;
+          cont = true;
+        }
+      }
+
+      //ZA cut
+      if(args.bin_vars & 1){
+        Double_t ZA = 90.0 - (shower->fDirectionElevation_Rad * TMath::RadToDeg());
+        if(ZA > ZABINS[ins.za + 1] || ZA < ZABINS[ins.za]){
+          cuts.za++;
+          cont = true;
+        }
+      }
+
+      //MSW cut
+      if(shower->fMSW < MSWBIN[0] || shower->fMSW > MSWBIN[1]){
+        cuts.msw++;
         cont = true;
       }
-    }
 
-    //ZA cut
-    if(args.bin_vars & 1){
-      Double_t ZA = 90.0 - (shower->S.fDirectionElevation_Rad * TMath::RadToDeg());
-      if(ZA > ZABINS[ins.za + 1] || ZA < ZABINS[ins.za]){
-        cuts.za++;
-        cont = true;
+      //AZ cut
+      if(args.bin_vars & 8){
+        double az = shower->fDirectionAzimuth_Rad * TMath::RadToDeg();
+        if(az > AZBINS[ins.az + 1] || az < AZBINS[ins.az]){
+          cuts.az++;
+          cont = true;
+        }
       }
-    }
-
-    //MSW cut
-    if(shower->S.fMSW < MSWBIN[0] || shower->S.fMSW > MSWBIN[1]){
-      cuts.msw++;
-      cont = true;
-    }
-
-    //AZ cut
-    if(args.bin_vars & 8){
-      double az = shower->S.fDirectionAzimuth_Rad * TMath::RadToDeg();
-      if(az > AZBINS[ins.az + 1] || az < AZBINS[ins.az]){
-        cuts.az++;
-        cont = true;
-      }
-    }
-    //Offset cut
-    VACoordinatePair shower_coords = VACoordinatePair(
-      shower->S.fDirectionRA_J2000_Rad,
-      shower->S.fDirectionDec_J2000_Rad,
-      VACoordinates::J2000,
-      VACoordinates::Rad
-    );
-    VACoordinatePair tracking_coords = VACoordinatePair(
-      shower->S.fArrayTrackingRA_J2000_Rad,
-      shower->S.fArrayTrackingDec_J2000_Rad,
-      VACoordinates::J2000,
-      VACoordinates::Rad
-    );
-    double offset = tracking_coords.angularSeparation_Deg(shower_coords);
-    if(offset > 1.75){
-      cuts.off++;
-      cont = true;
-    }
-    if(args.bin_vars & 16){
-      if(offset > OBINS[ins.off + 1] || offset < OBINS[ins.off]){
+      //Offset cut
+      VACoordinatePair shower_coords = VACoordinatePair(
+        shower->fDirectionRA_J2000_Rad,
+        shower->fDirectionDec_J2000_Rad,
+        VACoordinates::J2000,
+        VACoordinates::Rad
+      );
+      VACoordinatePair tracking_coords = VACoordinatePair(
+        shower->fArrayTrackingRA_J2000_Rad,
+        shower->fArrayTrackingDec_J2000_Rad,
+        VACoordinates::J2000,
+        VACoordinates::Rad
+      );
+      double offset = tracking_coords.angularSeparation_Deg(shower_coords);
+      if(offset > 1.75){
         cuts.off++;
         cont = true;
       }
-    }
+      if(args.bin_vars & 16){
+        if(offset > OBINS[ins.off + 1] || offset < OBINS[ins.off]){
+          cuts.off++;
+          cont = true;
+        }
+      }
 
-    if(cont) continue;
-    HIST->Fill(shower->S.fMSW);
-    if(HIST2D) HIST2D->Fill(shower->S.fMSW, shower->S.fMSL);
-    ra_dec->Fill(eventRA, eventDec);
+      if(cont) continue;
+      HIST->Fill(*bdtscore);
+      if(HIST2D) HIST2D->Fill(shower->fMSW, shower->fMSL);
+      ra_dec->Fill(eventRA, eventDec);
   }
   cuts.passed = HIST->Integral();
   std::cout << cuts.passed << " passed cuts." << std::endl;
