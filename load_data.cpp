@@ -404,7 +404,7 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
   cuts_t cuts;
   timestamp;
   std::cout << "Loading " << pathbase << std::endl;
-  int stage5_cuts = 0
+  int stage5_cuts = 0;
   TFile *f;
   while(std::getline(infile, line)){
     f = TFile::Open(line.c_str());
@@ -438,7 +438,7 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
       }
 
       //Shower Max Height Cut
-      if(shower->ShowerMaxHeight_KM < 7 || shower->ShowerMaxHeight_KM > 100){
+      if(shower->fShowerMaxHeight_KM < 7 || shower->fShowerMaxHeight_KM > 100){
         stage5_cuts++;
         continue;
       }
@@ -536,6 +536,7 @@ double loadData_bdt(indices_t ins, args_t args, std::string pathbase, TH1D* HIST
       HIST->Fill(*bdtscore);
       if(HIST2D) HIST2D->Fill(shower->fMSW, shower->fMSL);
       ra_dec->Fill(eventRA, eventDec);
+    }
   }
   cuts.passed = HIST->Integral();
   std::cout << cuts.passed << " passed cuts." << std::endl;
