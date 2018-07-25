@@ -220,6 +220,11 @@ void cacheData_vegas(args_t args, std::string pathbase){
     }
   }
 
+  std::ofstream temp_file;
+  if(pathbase == 'data'){
+    temp_file.open('data_check.csv');
+  }
+
   TFile *f;
   while(std::getline(flist, line)){
     f = TFile::Open(line.c_str());
@@ -250,6 +255,7 @@ void cacheData_vegas(args_t args, std::string pathbase){
 
       //Assign Cut Variables
       double msw = shower->fMSW;
+      double msl = shower->fMSL;
       auto tels_used = shower->fTelUsedInReconstruction;
       int tels = count(tels_used.begin(), tels_used.end(), 1);
       double energy = shower->fEnergy_GeV;
@@ -333,13 +339,23 @@ void cacheData_vegas(args_t args, std::string pathbase){
       ra_dec->Fill(eventRA, eventDec);
       bin_counts[z_bin][e_bin][o_bin]++;
 
-      cache_file << shower->fMSW << ","
-                << shower->fMSL << ","
+      cache_file << msw << ","
+                << msl << ","
                 << z_bin << ","
                 << e_bin << ","
-                << eventNTel-3 << ","
+                << tels-3 << ","
                 << a_bin << ","
                 << o_bin << ","
+                << eventRA << ","
+                << eventDec << std::endl;
+
+      temp_file << msw << ","
+                << msl << ","
+                << za << ","
+                << energy << ","
+                << tels << ","
+                << az << ","
+                << offset << ","
                 << eventRA << ","
                 << eventDec << std::endl;
     }
@@ -367,6 +383,7 @@ void cacheData_vegas(args_t args, std::string pathbase){
     bkg_centers.push_back(std::make_pair(ra_dec->GetMean(1), ra_dec->GetMean(2)));
   }
   cache_file.close();
+  temp_file.close();
 }
 
 void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
