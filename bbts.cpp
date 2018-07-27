@@ -729,6 +729,11 @@ int main(int argc, char* argv[]){
               if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists);
             }
 
+            //Clean up
+            delete DAT_HIST;
+            delete BKG_HIST;
+            delete SRC_HIST;
+
           }
         }
       }
