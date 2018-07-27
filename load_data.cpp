@@ -485,6 +485,10 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
         cont = true;
       }
     }
+    else if((int)fields[6] == 7){ //cut events with offset > 1.75
+        cuts.off++;
+        cont = true;
+    }
 
     if(cont) continue;
     HIST->Fill(fields[0]);
