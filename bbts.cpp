@@ -716,13 +716,14 @@ int main(int argc, char* argv[]){
             double alpha = 1;
             loadData(indices, *args, &alpha, hists);
             if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
-            if(args->output & 2) printRawData(hists);
-            if(args->hist & 1) histogram_raw_data(indices, hists);
-            if(args->graphics & 4) plot_msw_vs_msl(hists);
             if(!DAT_HIST->Integral()
               || !BKG_HIST->Integral()
               || !SRC_HIST->Integral()) continue;
 
+            if(args->output & 2) printRawData(hists);
+            if(args->hist & 1) histogram_raw_data(indices, hists);
+            if(args->graphics & 4) plot_msw_vs_msl(hists);
+            
             if(args->bidir) bidirectional(args, indices, alpha);
             else{
               double fracs[6];
