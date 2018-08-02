@@ -16,6 +16,7 @@ double ZABINS[] = {0.00,14.1,25.46,32.59,37.57,42.56,47.55};
 double EBINS[] = {316,630,1259,2512,5012};
 int TBINS[] = {3,4};
 double AZBINS[] = {0,45,90,135,180,225,270,315,360};
+double OBINS[] = {0.0, 1.0, 1.4, 1.7, 2.0};
 double OBINS[] = {0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0};
 double MSWBIN[] = {0.8, 1.3};
 
@@ -702,7 +703,7 @@ int main(int argc, char* argv[]){
     for(indices.e = 0; indices.e < 4; indices.e++){
       for(indices.tel = 0; indices.tel < 2; indices.tel++){
         for(indices.az = 0; indices.az < 8; indices.az++){
-          for(indices.off = 0; indices.off < 8; indices.off++){
+          for(indices.off = 0; indices.off < 4; indices.off++){
             if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
             DAT_HIST = new TH1D("DataHist", "Data", NBIN, PARLOW, PARHIGH);
