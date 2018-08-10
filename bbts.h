@@ -41,9 +41,11 @@
   std::cout << std::asctime(std::localtime(&__timestamp));  \
 }
 #define PRINTSPACE std::left << std::setw(PW)
-#define NBIN 20
 #define MSWLOW 0.8
 #define MSWHIGH 1.3
+#define BDTLOW 0.6
+#define BDTHIGH 1.0
+#define NBIN 20
 #define PW 15
 
 extern double ZABINS[];
@@ -54,7 +56,7 @@ extern double OBINS[];
 
 enum class Format_t{Vegas, Sample};
 struct args_t {
-  args_t() : format(Format_t::Toy),
+  args_t() : format(Format_t::Vegas),
   hist(0),
   output(0),
   verbosity(-1),
@@ -62,7 +64,7 @@ struct args_t {
   graphics(0),
   bidir(0),
   cache(1),
-  fit_param(1) {}
+  fit_params(1) {}
   Format_t format;
   int hist;
   int output;
@@ -71,7 +73,7 @@ struct args_t {
   int graphics;
   bool bidir;
   bool cache;
-  int fit_param;
+  int fit_params;
   std::string op_info;
 };
 struct indices_t{
@@ -82,24 +84,27 @@ struct indices_t{
   int off;
 };
 struct cuts_t{
-  cuts_t() : za(0), e(0), tel(0), az(0), off(0), msw(0),
+  cuts_t() : za(0), e(0), tel(0), az(0), off(0),
   src(0), passed(0), read(0) {}
   int za;
   int e;
   int tel;
   int az;
   int off;
-  int msw;
+  int par;
   int src;
   int passed;
   int read;
 };
 struct hists_t{
-  TH1D* dat_hist;
-  TH1D* bkg_hist;
-  TH1D* src_hist;
-  TH2D* dat_2hist;
-  TH2D* bkg_2hist;
+  TH1D* msw_dat;
+  TH1D* msw_bkg;
+  TH1D* msw_src;
+  TH1D* bdt_dat;
+  TH1D* bdt_bkg;
+  TH1D* bdt_src;
+  TH2D* msw_msl_dat;
+  TH2D* msw_msl_bkg;
   std::string outpath;
   std::string longoutpath;
 };

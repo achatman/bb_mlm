@@ -1,26 +1,49 @@
 #include "output.h"
 
-void printRawData(hists_t hists){
+void printRawData(hists_t *hists, std::string fit_param){
+  TH1D* dathist;
+  TH1D* bkghist;
+  TH1D* srchist;
+  int nbins;
+  if(fit_param == 'MSW'){
+    dathist = hists->msw_dat;
+    bkghist = hists->msw_bkg;
+    srchist = hists->msw_src;
+    nbins = NMSWBIN;
+  }
+  else if(fit_param == 'BDT'){
+    dathist = hists->bdt_dat;
+    bkghist = hists->bdt_bkg;
+    srchist = hists->bdt_src;
+    nbins = NBDTBIN;
+  }
+
   std::stringstream path;
-  path << "RawData_" << hists.outpath << ".csv";
+  path << "RawData_" << fit_param << "_" << hists.outpath << ".csv";
   std::ofstream f(path.str().c_str());
   f << "Bin: " << hists.longoutpath << std::endl;
-  f << "MSW, di, bi, si" << std::endl;
-  for(int i = 1; i <= NBIN; i++){
-    f << hists.dat_hist->GetBinCenter(i) << ","
-    << hists.dat_hist->GetBinContent(i) << ","
-    << hists.bkg_hist->GetBinContent(i) << ","
-    << hists.src_hist->GetBinContent(i) << std::endl;
+  f << fit_param << ", di, bi, si" << std::endl;
+  for(int i = 1; i <= nbins; i++){
+    f << dathist->GetBinCenter(i) << ","
+    << dathist->GetBinContent(i) << ","
+    << bkghist->GetBinContent(i) << ","
+    << srchist->GetBinContent(i) << std::endl;
   }
 }
 
-void histogram_raw_data(indices_t ins, hists_t hists){
+void histogram_raw_data(hists_t *hists, std::string fit_param){
   std::stringstream filepath;
-  filepath << "HIST_RAW_" << hists.outpath << ".png";
+  filepath << "HIST_RAW_" << fit_param << "_" << hists.outpath << ".png";
 
   //Copy the global histograms so that we can edit them
-  TH1D* dathist = new TH1D(*hists.dat_hist);
-  TH1D* bkghist = new TH1D(*hists.bkg_hist);
+  if(fit_param == "MSW"){
+    TH1D* dathist = new TH1D(*(hists->msw_dat));
+    TH1D* bkghist = new TH1D(*(hists->msw_bkg));
+  }
+  else if(fit_param == "BDT"){
+    TH1D* dathist = new TH1D(*(hists->msw_dat));
+    TH1D* bkghist = new TH1D(*(hists->msw_bkg));
+  }
 
   //Set up
   TCanvas *c1 = new TCanvas("","",1200,1200);
@@ -291,7 +314,6 @@ void print_cuts(std::string pathbase, cuts_t* cuts, std::string outpath){
     << PRINTSPACE << "telescope"
     << PRINTSPACE << "energy"
     << PRINTSPACE << "zenith angle"
-    << PRINTSPACE << "msw"
     << PRINTSPACE << "azimuth"
     << PRINTSPACE << "offset" << std::endl;
     f.close();
@@ -304,13 +326,12 @@ void print_cuts(std::string pathbase, cuts_t* cuts, std::string outpath){
   << PRINTSPACE << cuts->tel
   << PRINTSPACE << cuts->e
   << PRINTSPACE << cuts->za
-  << PRINTSPACE << cuts->msw
   << PRINTSPACE << cuts->az
   << PRINTSPACE << cuts->off << std::endl;
   f.close();
 }
 
-void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args, hists_t hists){
+void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, args_t args, std::string outpath, std::string longoutpath){
   int xbins = 100;
   int ybins = 100;
   //Find x limits such that xmax <= 1, xmin >= 0, and xmax - xmin = .3
@@ -329,7 +350,7 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
   }
 
   std::stringstream title;
-  title << "Likelihood " << title_tag << " " << hists.longoutpath;
+  title << "Likelihood " << title_tag << " " << longoutpath;
 
   gStyle->SetOptStat(0);
   TCanvas *c1 = new TCanvas("c1","c1", 1200,800);
@@ -350,7 +371,7 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
   gStyle->SetPalette(kBlackBody);
   map->Draw("SURF3");
   std::stringstream out_file;
-  out_file << "Likelihood_" << title_tag << "_" << hists.outpath << ".png";
+  out_file << "Likelihood_" << title_tag << "_" << outpath << ".png";
   c1->SaveAs(out_file.str().c_str());
 
   //clean up
@@ -358,27 +379,27 @@ void map_likelihood(double Pb, double Ps, std::string title_tag, indices_t ins, 
   delete map;
 }
 
-void plot_msw_vs_msl(hists_t hists){
-  hists.dat_2hist->GetXaxis()->SetTitle("MSW");
-  hists.dat_2hist->GetYaxis()->SetTitle("MSL");
-  hists.bkg_2hist->GetXaxis()->SetTitle("MSW");
-  hists.bkg_2hist->GetYaxis()->SetTitle("MSL");
+void plot_msw_vs_msl(hists_t *hists){
+  hists->msw_msl_dat->GetXaxis()->SetTitle("MSW");
+  hists->msw_msl_dat->GetYaxis()->SetTitle("MSL");
+  hists->msw_msl_bkg->GetXaxis()->SetTitle("MSW");
+  hists->msw_msl_bkg->GetYaxis()->SetTitle("MSL");
   double dat, bkg;
-  dat = hists.dat_2hist->GetMaximum();
-  bkg = hists.bkg_2hist->GetMaximum();
-  hists.dat_2hist->SetMaximum(dat > bkg ? dat : bkg);
-  hists.bkg_2hist->SetMaximum(dat > bkg ? dat : bkg);
-  dat = hists.dat_2hist->GetMinimum();
-  bkg = hists.bkg_2hist->GetMinimum();
-  hists.dat_2hist->SetMinimum(dat < bkg ? dat : bkg);
-  hists.bkg_2hist->SetMinimum(dat < bkg ? dat : bkg);
+  dat = hists->msw_msl_dat->GetMaximum();
+  bkg = hists->msw_msl_bkg->GetMaximum();
+  hists->msw_msl_dat->SetMaximum(dat > bkg ? dat : bkg);
+  hists->msw_msl_bkg->SetMaximum(dat > bkg ? dat : bkg);
+  dat = hists->msw_msl_dat->GetMinimum();
+  bkg = hists->msw_msl_bkg->GetMinimum();
+  hists->msw_msl_dat->SetMinimum(dat < bkg ? dat : bkg);
+  hists->msw_msl_bkg->SetMinimum(dat < bkg ? dat : bkg);
 
   std::stringstream title;
-  title << hists.dat_2hist->GetTitle() << " " << hists.longoutpath;
-  hists.dat_2hist->SetTitle(title.str().c_str());
+  title << hists->msw_msl_dat->GetTitle() << " " << hists.longoutpath;
+  hists->msw_msl_dat->SetTitle(title.str().c_str());
   title.str("");
-  title << hists.bkg_2hist->GetTitle() << " " << hists.longoutpath;
-  hists.bkg_2hist->SetTitle(title.str().c_str());
+  title << hists->msw_msl_bkg->GetTitle() << " " << hists.longoutpath;
+  hists->msw_msl_bkg->SetTitle(title.str().c_str());
 
   gStyle->SetPalette(kBlackBody);
   gStyle->SetOptStat(0);
@@ -386,10 +407,10 @@ void plot_msw_vs_msl(hists_t hists){
   TCanvas c1("c1", "c1", 2400, 1200);
   c1.Divide(2,1);
   c1.cd(1);
-  hists.dat_2hist->Draw("COLZ");
+  hists->msw_msl_dat->Draw("COLZ");
 
   c1.cd(2);
-  hists.bkg_2hist->Draw("COLZ");
+  hists->msw_msl_bkg->Draw("COLZ");
 
   std::stringstream out_file;
   out_file << "MSWMSL_" << hists.outpath << ".png";

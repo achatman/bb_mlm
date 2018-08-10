@@ -186,7 +186,7 @@ bool bin_event_cache(std::string line, indices_t *ins, cuts_t *cuts, args_t *arg
   return fail;
 }
 
-void loadsrc_csv(indices_t ins, args_t args, TH1D* SRC_HIST){
+void loadsrc_csv(indices_t ins, args_t args, hists_t hists){
   std::cout << "Loading Source" << std::endl;
   timestamp;
   std::ifstream srcif("src.list");
@@ -216,13 +216,18 @@ void loadsrc_csv(indices_t ins, args_t args, TH1D* SRC_HIST){
   std::string line;
   std::ifstream srcdatin(srcPath.str().c_str());
   while(std::getline(srcdatin, line)){
-    index = line.find(",");
-    line = line.substr(index+1,line.size() - index);
-    SRC_HIST->Fill(atof(line.c_str()));
+    std::vector<std::string> fields;
+    boost::split(fields, line, boost::is_any_of(","));
+    if(hists->msw_src) hists->msw_src->Fill(atof(fields[1]));
+    if(hists->bdt_src) hists->bdt_src->Fill(atof(fields[2]));
   }
   srcdatin.close();
-  std::cout << SRC_HIST->Integral()
-  << " events loaded for source." << std::endl;
+  if(hists->msw_src){
+      std::cout << hists->msw_src->Integral() << " events loaded for msw source." << std::endl;
+  }
+  if(hists->bdt_src){
+      std::cout << hists->bdt_src->Integral() << " events loaded for bdt source." << std::endl;
+  }
 }
 
 void cacheData_vegas(args_t args, std::string pathbase){
@@ -273,6 +278,7 @@ void cacheData_vegas(args_t args, std::string pathbase){
 
     TTreeReader reader("SelectedEvents/CombinedEventsTree", f);
     TTreeReaderValue<VAShowerData> shower(reader, "S");
+    TTreeReaderValue<double> bdt(reader, "BDTscore");
 
     while(reader.Next()){
       cuts.read++;
@@ -299,121 +305,18 @@ void cacheData_vegas(args_t args, std::string pathbase){
       params->offset = tracking_coords.angularSeparation_Deg(shower_coords);
 
       if(bin_event(params, &cuts, &args, sourcecuts)) continue;
-
-      //Parameter cut
-      if(shower->fMSW < MSWLOW || shower->fMSW> MSWHIGH){
-        cuts.msw++;
-        continue;
-      }
-
-      //Source Cut
-      Double_t eventRA = shower->fDirectionRA_J2000_Rad * TMath::RadToDeg();
-      Double_t eventDec = shower->fDirectionDec_J2000_Rad * TMath::RadToDeg();
-      VACoordinatePair eventCoord = VACoordinatePair(eventRA,eventDec,VACoordinates::J2000,VACoordinates::Deg);
-      bool fail_src_cuts;
-      for(auto &it: sourcecuts){
-        fail_src_cuts = it.InsideExclRadius(eventCoord);
-        if(fail_src_cuts) break;
-      }
-      if(fail_src_cuts && excl_exists){
-        cuts.src++;
-        cont = true;
-      }
-
-      //Assign Cut Variables
-      double msw = shower->fMSW;
-      double msl = shower->fMSL;
-      auto tels_used = shower->fTelUsedInReconstruction;
-      int tels = count(tels_used.begin(), tels_used.end(), 1);
-      double energy = shower->fEnergy_GeV;
-      double za = 90.0 - (shower->fDirectionElevation_Rad * TMath::RadToDeg());
-      double az = shower->fDirectionAzimuth_Rad * TMath::RadToDeg();
-      VACoordinatePair shower_coords = VACoordinatePair(
-        shower->fDirectionRA_J2000_Rad,
-        shower->fDirectionDec_J2000_Rad,
-        VACoordinates::J2000,
-        VACoordinates::Rad
-      );
-      VACoordinatePair tracking_coords = VACoordinatePair(
-        shower->fArrayTrackingRA_J2000_Rad,
-        shower->fArrayTrackingDec_J2000_Rad,
-        VACoordinates::J2000,
-        VACoordinates::Rad
-      );
-      double offset = tracking_coords.angularSeparation_Deg(shower_coords);
-
-      //MSW cut
-      if(msw < MSWLOW || msw > MSWHIGH){
-        cuts.msw++;
-        cont = true;
-      }
-
-      //Tel cut
-      if(tels != 3 && tels != 4){
-        cuts.tel++;
-        cont = true;
-      }
-
-      //Energy cut
-      int e_bin = -1;
-      for(int e = 0; e < 4; e++){
-        if(energy < EBINS[e+1] && energy > EBINS[e]){
-          e_bin = e;
-        }
-      }
-      if(e_bin == -1){
-        cuts.e++;
-        cont = true;
-      }
-
-      //ZA cut
-      int z_bin = -1;
-      for(int z = 0; z < 6; z++){
-        if(za < ZABINS[z+1] && za > ZABINS[z]){
-          z_bin = z;
-        }
-      }
-      if(z_bin == -1){
-        cuts.za++;
-        cont = true;
-      }
-
-      //AZ cut
-      int a_bin = -1;
-      for(int a = 0; a < 8; a++){
-        if(az < AZBINS[a+1] && az > AZBINS[a]){
-          a_bin = a;
-        }
-      }
-      if(a_bin == -1){
-        cuts.az++;
-        cont = true;
-      }
-
-      //Offset cut
-      int o_bin = -1;
-      for(int o = 0; o < 8; o++){
-        if(offset < OBINS[o+1] && offset > OBINS[o]){
-          o_bin = o;
-        }
-      }
-      if(o_bin == -1){
-        cuts.off++;
-        cont = true;
-      }
-      if(cont) continue;
-      */
       ra_dec->Fill(params->eventRa, params->eventDec);
 
-      cache_file << shower->fMSW << ","
-                 << shower->fMSL << ","
-                 << params->zbin << ","
-                 << params->ebin << ","
-                 << params->ntels-3 << ","
-                 << params->abin << ","
-                 << params->obin << ","
-                 << params->eventRa << ","
-                 << params->eventDec << std::endl;
+      cache_file << shower->fMSW << ","           //0
+                 << shower->fMSL << ","           //1
+                 << params->zbin << ","           //2
+                 << params->ebin << ","           //3
+                 << params->ntels-3 << ","        //4
+                 << params->abin << ","           //5
+                 << params->obin << ","           //6
+                 << params->eventRa << ","        //7
+                 << params->eventDec << ","       //8
+                 << *bdt << std::endl;            //9
 
       delete params;
     }
@@ -424,7 +327,6 @@ void cacheData_vegas(args_t args, std::string pathbase){
   std::cout << cuts.tel << " failed tel cut." << std::endl;
   std::cout << cuts.e << " failed energy cut." << std::endl;
   std::cout << cuts.za << " failed za cut." << std::endl;
-  std::cout << cuts.msw << " failed msw cut." << std::endl;
   std::cout << cuts.az << " failed az cut." << std::endl;
   std::cout << cuts.off << " failed off cut." << std::endl;
 
@@ -471,7 +373,7 @@ void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIS
   }
 }
 
-double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
+double loadData_vegas(indices_t ins, args_t args, std::string pathbase, *hists){
   std::stringstream cache_path;
   cache_path << "Cache_" << pathbase << ".csv";
   std::ifstream cache_file(cache_path.str().c_str());
@@ -496,8 +398,16 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
 
     if(bin_event_cache(line, &ins, &cuts, &args)) continue;
     cuts.passed++;
-    HIST->Fill(fields[0]);
-    if(HIST2D) HIST2D->Fill(fields[0], fields[1]);
+    if(pathbase == "data"){
+        if(hists->msw_dat) hists->msw_dat->Fill(fields[0]);
+        if(hists->msw_msl_dat) hists->msw_msl_dat->Fill(fields[0], fields[1]);
+        if(hists->bdt_dat) hists->bdt_dat->Fill(fields[9]);
+    }
+    else{
+        if(hists->msw_bkg) hists->msw_bkg->Fill(fields[0]);
+        if(hists->msw_msl_bkg) hists->msw_msl_bkg->Fill(fields[0], fields[1]);
+        if(hists->bdt_bkg) hists->bdt_bkg->Fill(fields[9]);
+    }
   }
   std::cout << cuts.passed << " passed cuts." << std::endl;
   std::cout << cuts.read << " cuts read." << std::endl;
@@ -505,7 +415,6 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
   std::cout << cuts.tel << " failed tel cut." << std::endl;
   std::cout << cuts.e << " failed energy cut." << std::endl;
   std::cout << cuts.za << " failed za cut." << std::endl;
-  std::cout << cuts.msw << " failed msw cut." << std::endl;
   std::cout << cuts.az << " failed az cut." << std::endl;
   std::cout << cuts.off << " failed off cut." << std::endl;
 
@@ -513,29 +422,29 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
   return 1;
 }
 
-void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
-  OUTSTR = hists.outpath;
+void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
+  OUTSTR = hists->outpath;
   if(args.format == Format_t::Vegas){
-    loadData_vegas(ins, args, "data", hists.dat_hist, hists.dat_2hist);
+    loadData_vegas(ins, args, "data", hists->dat_hist, hists->dat_2hist);
     //This is not ideal. (Slightly better now)
     if(!access("bkg_sources.list", F_OK)){
       std::ifstream flist("bkg_sources.list");
       std::string line;
       while(std::getline(flist, line)){
-        loadData_vegas(ins, args, line, hists.bkg_hist, hists.bkg_2hist);
+        loadData_vegas(ins, args, line, hists->bkg_hist, hists->bkg_2hist);
       }
     }
     else{
-      loadData_vegas(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
+      loadData_vegas(ins, args, "bkg", hists->bkg_hist, hists->bkg_2hist);
     }
-    *alpha = hists.dat_hist->Integral() / hists.bkg_hist->Integral(); //TODO
-    loadsrc_csv(ins, args, hists.src_hist);
+    *alpha = hists->dat_hist->Integral() / hists->bkg_hist->Integral(); //TODO
+    loadsrc_csv(ins, args, hists->src_hist);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
   }
   else if(args.format == Format_t::Sample){
-    loadData_sample(ins, args, "data", hists.dat_hist, hists.dat_2hist);
-    loadData_sample(ins, args, "bkg", hists.bkg_hist, hists.bkg_2hist);
-    loadData_sample(ins, args, "src", hists.src_hist);
+    loadData_sample(ins, args, "data", hists->dat_hist, hists->dat_2hist);
+    loadData_sample(ins, args, "bkg", hists->bkg_hist, hists->bkg_2hist);
+    loadData_sample(ins, args, "src", hists->src_hist);
     *alpha = 3/5;
     std::cout << "Histograms loaded from Sample format." << std::endl;
   }

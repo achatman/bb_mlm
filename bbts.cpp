@@ -2,6 +2,11 @@
 #include "load_data.h"
 #include "output.h"
 
+//TODO
+//Fix histogram_fit_data
+
+
+
 std::string OUTPATH;
 std::string LONGOUTPATH;
 
@@ -352,8 +357,7 @@ void wrapper_nosrc_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t pa
 
 void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1]); }
 
-void fit(indices_t ins, args_t args, double alpha, double *fracs){
-  hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH, LONGOUTPATH};
+void fit(indices_t ins, args_t args, double alpha, double *fracs, std::string fit_param){
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
   TFitter* fit_src_nobb   = new TFitter(2);
@@ -387,15 +391,6 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs){
   fit_src_nobb  ->ExecuteCommand("MIGRAD", 0, 0);
   fit_nosrc_bb  ->ExecuteCommand("MIGRAD", 0, 0);
   fit_src_bb    ->ExecuteCommand("MIGRAD", 0, 0);
-
-  if(fracs){
-    fracs[0] = fit_src_nobb->GetParameter(0);
-    fracs[1] = fit_src_nobb->GetParameter(1);
-    fracs[2] = fit_src_bb->GetParameter(0);
-    fracs[3] = fit_src_bb->GetParameter(1);
-    fracs[4] = fit_nosrc_nobb->GetParameter(0);
-    fracs[5] = fit_nosrc_bb->GetParameter(0);
-  }
 
   //Get likelihood and TS
   bool output_bins = (args.output & 1) && (DAT_HIST->Integral() + BKG_HIST->Integral());
@@ -459,6 +454,7 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs){
     << lima_bb << std::endl;
   f.close();
 
+  /*
   if(args.output & 4){
     calculate_errors(fit_src_bb->GetParameter(0),
                     fit_src_bb->GetParameter(1),
@@ -466,13 +462,23 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs){
                     fit_src_bb->GetParError(1),
                     ins, alpha, hists);
   }
-  if(args.graphics & 1) map_likelihood(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1), "Std", ins, args, hists);
-  if(args.graphics & 2) map_likelihood(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), "BB", ins, args, hists);
+  */
+  if(args.graphics & 1) map_likelihood(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1), "Std", ins, args, OUTPATH, LONGOUTPATH);
+  if(args.graphics & 2) map_likelihood(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), "BB", ins, args, OUTPATH, LONGOUTPATH);
+
+  if(fracs){
+    fracs[0] = fit_src_nobb->GetParameter(0);
+    fracs[1] = fit_src_nobb->GetParameter(1);
+    fracs[2] = fit_src_bb->GetParameter(0);
+    fracs[3] = fit_src_bb->GetParameter(1);
+    fracs[4] = fit_nosrc_nobb->GetParameter(0);
+    fracs[5] = fit_nosrc_bb->GetParameter(0);
+  }
 }
 
-void bidirectional(args_t *args, indices_t indices, double alpha){
+void bidirectional(args_t *args, indices_t indices, double alpha, std::string fit_param){
   double fracs_for[6];
-  fit(indices, *args, alpha, fracs_for);
+  fit(indices, *args, alpha, fracs_for, fit_param);
 
   //Plot Forwards
   gStyle->SetOptStat(0);
@@ -512,7 +518,7 @@ void bidirectional(args_t *args, indices_t indices, double alpha){
   DAT_HIST = BKG_HIST;
   BKG_HIST = temp;
   double fracs_back[6];
-  fit(indices, *args, alpha, fracs_back);
+  fit(indices, *args, alpha, fracs_back, fit_param);
 
   //Plot Backward Fit
   c1->cd(4);
@@ -704,36 +710,77 @@ int main(int argc, char* argv[]){
           for(indices.off = 0; indices.off < 8; indices.off++){
             if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
-            DAT_HIST = new TH1D("DataHist", "Data", NBIN, MSWLOW, MSWHIGH);
-            BKG_HIST = new TH1D("BkgHist", "BKG", NBIN, MSWLOW, MSWHIGH);
-            SRC_HIST = new TH1D("SrcHist", "SRC", NBIN, MSWLOW, MSWHIGH);
-            if(args->graphics & 4){
-              DAT_2HIST = new TH2D("Data_MSWvsMSL", "Data MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
-              BKG_2HIST = new TH2D("Bkg_MSWvsMSL", "Bkg MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+            //Initialize Histograms
+            hists_t *hists;
+            if(args->fit_params & 1){
+              hists->msw_dat = new TH1D("MSWDataHist", "MSW Data", NBIN, MSWLOW, MSWHIGH);
+              hists->msw_bkg = new TH1D("MSWBkgHist", "MSW Bkg", NBIN, MSWLOW, MSWHIGH);
+              hists->msw_src = new TH1D("MSWSrcHist", "MSW Src", NBIN, MSWLOW, MSWHIGH);
             }
-            hists_t hists = {DAT_HIST, BKG_HIST, SRC_HIST, DAT_2HIST, BKG_2HIST, OUTPATH, LONGOUTPATH};
+            if(args->fit_params & 2){
+              hists->bdt_dat = new TH1D("BDTDataHist", "BDT Data", NBIN, BDTLOW, BDTHIGH);
+              hists->bdt_bkg = new TH1D("BDTBkgHist", "BDT Bkg", NBIN, BDTLOW, BDTHIGH);
+              hists->bdt_src = new TH1D("BDTSrcHist", "BDT Src", NBIN, BDTLOW, BDTHIGH);
+            }
+            if(args->graphics & 4){
+              hists->msw_msl_dat = new TH2D("Data_MSWvsMSL", "Data MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+              hists->msw_msl_bkg = new TH2D("Bkg_MSWvsMSL", "Bkg MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
+            }
+            hists->outpath = OUTPATH;
+            hists->longoutpath = LONGOUTPATH;
             double alpha = 1;
             loadData(indices, *args, &alpha, hists);
-            if(!DAT_HIST || !BKG_HIST || !SRC_HIST) throw 407;
-            if(args->output & 2) printRawData(hists);
-            if(args->hist & 1) histogram_raw_data(indices, hists);
+            if(!hists->msw_dat && !hists->bdt_dat) throw 407;
+            if(!hists->msw_bkg && !hists->bdt_bkg) throw 408;
+            if(!hists->msw_src && !hists->bdt_src) throw 409;
+            if(args->output & 2 && args->fit_params & 1) printRawData(hists, "MSW");
+            if(args->output & 2 && args->fit_params & 2) printRawData(hists, "BDT");
+            if(args->hist & 1 && args->fit_params & 1) histogram_raw_data(hists, "MSW");
+            if(args->hist & 1 && args->fit_params & 2) histogram_raw_data(hists, "BDT");
             if(args->graphics & 4) plot_msw_vs_msl(hists);
-            if(!DAT_HIST->Integral()
-              || !BKG_HIST->Integral()
-              || !SRC_HIST->Integral()) continue;
+            if(!(hists->msw_dat->Integral() + hists->bdt_dat->Integral())) continue;
+            if(!(hists->msw_bkg->Integral() + hists->bdt_bkg->Integral())) continue;
+            if(!(hists->msw_src->Integral() + hists->bdt_src->Integral())) continue;
 
-            if(args->bidir) bidirectional(args, indices, alpha);
-            else{
-              double fracs[6];
-              fit(indices, *args, alpha, fracs);
-              if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists);
+            //MSW Fit
+            if(args->fit_params & 1){
+              DAT_HIST = hists->msw_dat;
+              BKG_HIST = hists->msw_bkg;
+              SRC_HIST = hists->msw_src;
+              OUTPATH = "MSW" + hists->outpath;
+              LONGOUTPATH = "MSW" + hists->longoutpath;
+              if(args->bidir) bidirectional(args, indices, alpha, "MSW");
+              else {
+                double fracs[6];
+                fit(indices, *args, alpha, 0, "MSW");
+                if(args.hist & 2) histogram_fit_data(fracs, ins, args, hists);
+              }
             }
 
-            //Clean up
-            delete DAT_HIST;
-            delete BKG_HIST;
-            delete SRC_HIST;
+            //BDT Fit
+            if(args->fit_params & 2){
+              DAT_HIST = hists->bdt_dat;
+              BKG_HIST = hists->bdt_bkg;
+              SRC_HIST = hists->bdt_src;
+              OUTPATH = "BDT" + hists->outpath;
+              LONGOUTPATH = "BDT" + hists->longoutpath;
+              if(args->bidir) bidirectional(args, indices, alpha, "BDT");
+              else{
+                double fracs[6];
+                fit(indices, *args, alpha, 0, "BDT");
+                if(args.hist & 2) histogram_fit_data(fracs, ins, args, hists);
+              }
+            }
 
+            //Clean up hists
+            delete hists->msw_dat;
+            delete hists->msw_bkg;
+            delete hists->msw_src;
+            delete hists->bdt_dat;
+            delete hists->bdt_bkg;
+            delete hists->bdt_src;
+            delete hists->msw_msl_dat;
+            delete hists->msw_msl_bkg;
           }
         }
       }
@@ -779,7 +826,7 @@ OPTIONS:
     Available: none, raw, fit, all.
     Default: none.
 
-  --no-cache
+  --no-cache <Not Implemented>
     Disables input data caching
 
   -op, --op-info PATH
@@ -906,12 +953,12 @@ OPTIONS:
     }
     if(!strcmp(argv[i], "--fit-parameter")){
       if(i < argc - 1 && !strcmp(argv[i+1], "msw")){
-        if(args->fit_param & 1) args->fit_param -= 1;
-        else args->fit_param += 1;
+        if(args->fit_params & 1) args->fit_params -= 1;
+        else args->fit_params += 1;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "bdt")){
-        if(args->fit_param & 2) args->fit_param -= 2;
-        else args->fit_param += 2;
+        if(args->fit_params & 2) args->fit_params -= 2;
+        else args->fit_params += 2;
       }
     }
   }
