@@ -774,6 +774,9 @@ OPTIONS:
     Available: none, raw, fit, all.
     Default: none.
 
+  --no-cache
+    Disables input data caching
+
   -op, --op-info PATH
     Passes file path to be used where optional info is printed.
 
@@ -884,6 +887,9 @@ OPTIONS:
     }
     if(!strcmp(argv[i], "--bidirectional")){
       args->bidir = true;
+    }
+    if(!strcmp(argv[i], "--no-cache")){
+      args->cache = false;
     }
   }
   return 0;
