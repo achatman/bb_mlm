@@ -729,6 +729,11 @@ int main(int argc, char* argv[]){
               if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists);
             }
 
+            //Clean up
+            delete DAT_HIST;
+            delete BKG_HIST;
+            delete SRC_HIST;
+
           }
         }
       }
@@ -753,8 +758,8 @@ OPTIONS:
 
   -d FORMAT, --data-format FORMAT
     Format of the imput data.
-    Available: toy, csv, vegas, sample.
-    Default: toy.
+    Available: vegas, sample.
+    Default: vegas.
 
   -g GRAPHICS, --graphics GRAPHICS
     Triggers output of graphics files.
@@ -768,6 +773,9 @@ OPTIONS:
     Triggers output of histograms.
     Available: none, raw, fit, all.
     Default: none.
+
+  --no-cache
+    Disables input data caching
 
   -op, --op-info PATH
     Passes file path to be used where optional info is printed.
@@ -785,12 +793,6 @@ OPTIONS:
       return 1;
     }
     if(!strcmp(argv[i], "-d") || !strcmp(argv[i], "--data-format")){
-      if(i < argc - 1 && !strcmp(argv[i+1], "toy")){
-        args->format = Format_t::Toy;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "csv")){
-        args->format = Format_t::Csv;
-      }
       if(i < argc - 1 && !strcmp(argv[i+1], "vegas")){
         args->format = Format_t::Vegas;
       }
@@ -879,6 +881,9 @@ OPTIONS:
     }
     if(!strcmp(argv[i], "--bidirectional")){
       args->bidir = true;
+    }
+    if(!strcmp(argv[i], "--no-cache")){
+      args->cache = false;
     }
   }
   return 0;

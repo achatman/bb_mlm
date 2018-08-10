@@ -52,7 +52,7 @@ extern int TBINS[];
 extern double AZBINS[];
 extern double OBINS[];
 
-enum class Format_t{Toy, Csv, Vegas, Sample};
+enum class Format_t{Vegas, Sample};
 struct args_t {
   args_t() : format(Format_t::Toy),
   hist(0),
@@ -60,7 +60,8 @@ struct args_t {
   verbosity(-1),
   bin_vars(7),
   graphics(0),
-  bidir(0) {}
+  bidir(0),
+  cache(1) {}
   Format_t format;
   int hist;
   int output;
@@ -68,6 +69,7 @@ struct args_t {
   int bin_vars;
   int graphics;
   bool bidir;
+  bool cache;
   std::string op_info;
 };
 struct indices_t{
