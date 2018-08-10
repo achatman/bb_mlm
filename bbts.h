@@ -61,7 +61,8 @@ struct args_t {
   bin_vars(7),
   graphics(0),
   bidir(0),
-  cache(1) {}
+  cache(1),
+  fit_param(1) {}
   Format_t format;
   int hist;
   int output;
@@ -70,6 +71,7 @@ struct args_t {
   int graphics;
   bool bidir;
   bool cache;
+  int fit_param;
   std::string op_info;
 };
 struct indices_t{

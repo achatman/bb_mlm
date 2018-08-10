@@ -761,6 +761,11 @@ OPTIONS:
     Available: vegas, sample.
     Default: vegas.
 
+  --fit-parameter
+    Which parameter(s) to run the fit on.
+    Available: msw, bdt
+    Default: msw
+
   -g GRAPHICS, --graphics GRAPHICS
     Triggers output of graphics files.
     Available: none, stdlnL, bblnL, mswmsl, all.
@@ -805,10 +810,12 @@ OPTIONS:
         args->hist = 0;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "raw")){
-        args->hist += 1;
+        if(args->hist & 1) args->hist -= 1;
+        else args->hist += 1;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "fit")){
-        args->hist += 2;
+        if(args->hist & 2) args->hist -= 2;
+        else args->hist += 2;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "all")){
         args->hist = 3;
@@ -819,16 +826,20 @@ OPTIONS:
         args->output = 0;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "bins")){
-        args->output += 1;
+        if(args->output & 1) args->output -= 1;
+        else args->output += 1;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "raw")){
-        args->output += 2;
+        if(args->output & 2) args->output -= 2;
+        else args->output += 2;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "errors")){
-        args->output += 4;
+        if(args->output & 4) args->output -= 4;
+        else args->output += 4;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "cuts")){
-        args->output += 8;
+        if(args->output & 8) args->output -= 8;
+        else args->output += 8;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "all")){
         args->output = 15;
@@ -841,19 +852,24 @@ OPTIONS:
     }
     if(!strcmp(argv[i], "-b") || !strcmp(argv[i], "--bin-variable")){
       if(i < argc - 1 && !strcmp(argv[i+1], "zenith") && !(args->bin_vars & 1)){
-        args->bin_vars += 1;
+        if(args->bin_vars & 1) args->bin_vars -= 1;
+        else args->bin_vars += 1;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "energy") && !(args->bin_vars & 2)){
-        args->bin_vars += 2;
+        if(args->bin_vars & 2) args->bin_vars -= 2;
+        else args->bin_vars += 2;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "telescope") && !(args->bin_vars & 4)){
-        args->bin_vars += 4;
+        if(args->bin_vars & 4) args->bin_vars -= 4;
+        else args->bin_vars += 4;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "azimuth") && !(args->bin_vars & 8)){
-        args->bin_vars += 8;
+        if(args->bin_vars & 8) args->bin_vars -= 8;
+        else args->bin_vars += 8;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "offset") && !(args->bin_vars & 16)){
-        args->bin_vars += 16;
+        if(args->bin_vars & 16) args->bin_vars -= 16;
+        else args->bin_vars += 16;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "all")){
         args->bin_vars = 31;
@@ -864,13 +880,16 @@ OPTIONS:
         args->graphics = 0;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "stdlnL") && !(args->graphics & 1)){
-        args->graphics += 1;
+        if(args->graphics & 1) args->graphics -= 1;
+        else args->graphics += 1;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "bblnL") && !(args->graphics & 2)){
-        args->graphics += 2;
+        if(args->graphics & 2) args->graphics -= 2;
+        else args->graphics += 2;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "mswmsl") && !(args->graphics & 4)){
-        args->graphics += 4;
+        if(args->graphics & 4) args->graphics -= 4;
+        else args->graphics += 4;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "all")){
         args->graphics = 7;
@@ -884,6 +903,16 @@ OPTIONS:
     }
     if(!strcmp(argv[i], "--no-cache")){
       args->cache = false;
+    }
+    if(!strcmp(argv[i], "--fit-parameter")){
+      if(i < argc - 1 && !strcmp(argv[i+1], "msw")){
+        if(args->fit_param & 1) args->fit_param -= 1;
+        else args->fit_param += 1;
+      }
+      if(i < argc - 1 && !strcmp(argv[i+1], "bdt")){
+        if(args->fit_param & 2) args->fit_param -= 2;
+        else args->fit_param += 2;
+      }
     }
   }
   return 0;
