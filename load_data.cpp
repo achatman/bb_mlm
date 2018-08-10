@@ -225,119 +225,6 @@ void loadsrc_csv(indices_t ins, args_t args, TH1D* SRC_HIST){
   << " events loaded for source." << std::endl;
 }
 
-double loadData_toy(indices_t ins, args_t args, std::string pathbase, TH1D* HIST){
-  std::string line;
-  TFile *f;
-  std::stringstream sstream;
-  sstream << pathbase << ".list";
-  std::ifstream flist(sstream.str().c_str());
-
-  //Check each point against cuts
-  cuts_t cuts;
-  double livetime = 0;
-  int overflow = 0;
-
-  //Construct Data Histogram
-  std::cout << "Loading " << pathbase << std::endl;
-  timestamp;
-  while(std::getline(flist, line)){
-    f = TFile::Open(line.c_str());
-    if(!f){
-      std::cout << "Cannot open " << line << ". Moving swiftly onward." << std::endl;
-      continue;
-    }
-
-    TTreeReader reader((TTree*)f->Get("ToyMCStudies/ToyMCSample_1/DataTree_1"));
-    TTreeReaderValue<double> za(reader, "Elevation_Deg");
-    TTreeReaderValue<double> energy(reader, "EnergyLower_TeV");
-    TTreeReaderValue<double> telescopes(reader, "TelescopeMultiplicity");
-    TTreeReaderValue<double> msw(reader, "MeanScaledWidth");
-    TTreeReaderValue<double> live(reader, "Livetime_Seconds");
-    TTreeReaderValue<double> az(reader, "Azimuth_Deg");
-    TTreeReaderValue<double> event_dec(reader, "EventDec_Deg");
-    TTreeReaderValue<double> event_ra(reader, "EventRA_Deg");
-    TTreeReaderValue<double> tracking_dec(reader, "TrackingDec_Deg");
-    TTreeReaderValue<double> tracking_ra(reader, "TrackingRA_Deg");
-
-    while(reader.Next()){
-      cuts.read++;
-      //Telescope Cut
-      if(args.bin_vars & 4){
-        if(*telescopes != TBINS[ins.tel]){
-          cuts.tel++;
-          continue;
-        }
-      }
-
-      //Energy Cut
-      if(args.bin_vars & 2){
-        double en = *energy * 1000;
-        if(en > EBINS[ins.e+1] || en < EBINS[ins.e]){
-          cuts.e++;
-          continue;
-        }
-      }
-
-      //ZA Cut
-      if(args.bin_vars & 1){
-        if(90-(*za) > ZABINS[ins.za + 1] || 90-(*za) < ZABINS[ins.za]){
-          cuts.za++;
-          continue;
-        }
-      }
-
-      //MSW Cut
-      if(*msw < MSWLOW || *msw > MSWHIGH){
-        cuts.msw++;
-        continue;
-      }
-
-      //AZ Cut
-      if(args.bin_vars & 8){
-        if(*az > AZBINS[ins.az + 1] || *az < AZBINS[ins.az]){
-          cuts.az++;
-          continue;
-        }
-      }
-      //Offset Cut
-      if(args.bin_vars & 16){
-        VACoordinatePair shower_coords = VACoordinatePair(
-          *event_dec, *event_ra, VACoordinates::J2000, VACoordinates::Deg
-        );
-        VACoordinatePair tracking_coords = VACoordinatePair(
-          *tracking_dec, *tracking_ra, VACoordinates::J2000, VACoordinates::Deg
-        );
-        double offset = tracking_coords.angularSeparation_Deg(shower_coords);
-        if(offset > 2.0) overflow++;
-        if(offset > OBINS[ins.off + 1] || offset < OBINS[ins.off]){
-          cuts.off++;
-          continue;
-        }
-      }
-
-      HIST->Fill(*msw);
-      livetime += *live;
-    }
-    f->Close();
-  }
-  cuts.passed = HIST->Integral();
-  std::cout << cuts.passed << " passed cuts." << std::endl;
-  std::cout << cuts.read << " points read." << std::endl;
-  std::cout << cuts.tel << " failed tel cut." << std::endl;
-  std::cout << cuts.e << " failed energy cut." << std::endl;
-  std::cout << cuts.za << " failed za cut." << std::endl;
-  std::cout << cuts.msw << " failed msw cut." << std::endl;
-  std::cout << cuts.az << " failed az cut." << std::endl;
-  std::cout << cuts.off << " failed off cut." << std::endl;
-
-
-  if(args.output & 8){
-    print_cuts(pathbase, &cuts, OUTSTR);
-  }
-  std::cout << pathbase << " Overflow: " << overflow << std::endl;
-  return livetime;
-}
-
 void cacheData_vegas(args_t args, std::string pathbase){
   std::stringstream excl_file;
   excl_file << pathbase << "_src.txt";
@@ -419,7 +306,6 @@ void cacheData_vegas(args_t args, std::string pathbase){
         continue;
       }
 
-      /*
       //Source Cut
       Double_t eventRA = shower->fDirectionRA_J2000_Rad * TMath::RadToDeg();
       Double_t eventDec = shower->fDirectionDec_J2000_Rad * TMath::RadToDeg();
@@ -608,52 +494,6 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
     }
     line_fields.clear();
 
-    /*
-    //Zenith cut
-    if(args.bin_vars & 1){
-      if((int)fields[2] != ins.za){
-        cuts.za++;
-        cont = true;
-      }
-    }
-
-    //Energy cut
-    if(args.bin_vars & 2){
-      if((int)fields[3] != ins.e){
-        cuts.e++;
-        cont = true;
-      }
-    }
-
-    //Tel cut
-    if(args.bin_vars & 4){
-      if((int)fields[4] != ins.tel){
-        cuts.tel++;
-        cont = true;
-      }
-    }
-
-    //Azimuth cut
-    if(args.bin_vars & 8){
-      if((int)fields[5] != ins.az){
-        cuts.az++;
-        cont = true;
-      }
-    }
-
-    //Offset cut
-    if(args.bin_vars & 16){
-      if((int)fields[6] != ins.off){
-        cuts.off++;
-        cont = true;
-      }
-    }
-    else if((int)fields[6] == 7){ //cut events with offset > 1.75
-        cuts.off++;
-        cont = true;
-    }
-    */
-
     if(bin_event_cache(line, &ins, &cuts, &args)) continue;
     cuts.passed++;
     HIST->Fill(fields[0]);
@@ -675,12 +515,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, TH1D* HI
 
 void loadData(indices_t ins, args_t args, double *alpha, hists_t hists){
   OUTSTR = hists.outpath;
-  if(args.format == Format_t::Toy){
-    *alpha = loadData_toy(ins, args, "data", hists.dat_hist) / loadData_toy(ins, args, "bkg", hists.bkg_hist);
-    loadsrc_csv(ins, args, hists.src_hist);
-    std::cout << "Histograms loaded from Toy format." << std::endl;
-  }
-  else if(args.format == Format_t::Vegas){
+  if(args.format == Format_t::Vegas){
     loadData_vegas(ins, args, "data", hists.dat_hist, hists.dat_2hist);
     //This is not ideal. (Slightly better now)
     if(!access("bkg_sources.list", F_OK)){

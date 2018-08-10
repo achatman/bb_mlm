@@ -52,7 +52,7 @@ extern int TBINS[];
 extern double AZBINS[];
 extern double OBINS[];
 
-enum class Format_t{Toy, Csv, Vegas, Sample};
+enum class Format_t{Vegas, Sample};
 struct args_t {
   args_t() : format(Format_t::Toy),
   hist(0),
