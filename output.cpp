@@ -5,23 +5,23 @@ void printRawData(hists_t *hists, std::string fit_param){
   TH1D* bkghist;
   TH1D* srchist;
   int nbins;
-  if(fit_param == 'MSW'){
+  if(fit_param == "MSW"){
     dathist = hists->msw_dat;
     bkghist = hists->msw_bkg;
     srchist = hists->msw_src;
-    nbins = NMSWBIN;
+    nbins = NBIN;
   }
-  else if(fit_param == 'BDT'){
+  else if(fit_param == "BDT"){
     dathist = hists->bdt_dat;
     bkghist = hists->bdt_bkg;
     srchist = hists->bdt_src;
-    nbins = NBDTBIN;
+    nbins = NBIN;
   }
 
   std::stringstream path;
-  path << "RawData_" << fit_param << "_" << hists.outpath << ".csv";
+  path << "RawData_" << fit_param << "_" << hists->outpath << ".csv";
   std::ofstream f(path.str().c_str());
-  f << "Bin: " << hists.longoutpath << std::endl;
+  f << "Bin: " << hists->longoutpath << std::endl;
   f << fit_param << ", di, bi, si" << std::endl;
   for(int i = 1; i <= nbins; i++){
     f << dathist->GetBinCenter(i) << ","
@@ -33,16 +33,17 @@ void printRawData(hists_t *hists, std::string fit_param){
 
 void histogram_raw_data(hists_t *hists, std::string fit_param){
   std::stringstream filepath;
-  filepath << "HIST_RAW_" << fit_param << "_" << hists.outpath << ".png";
+  filepath << "HIST_RAW_" << fit_param << "_" << hists->outpath << ".png";
 
   //Copy the global histograms so that we can edit them
+  TH1D *dathist, *bkghist;
   if(fit_param == "MSW"){
-    TH1D* dathist = new TH1D(*(hists->msw_dat));
-    TH1D* bkghist = new TH1D(*(hists->msw_bkg));
+    dathist = new TH1D(*(hists->msw_dat));
+    bkghist = new TH1D(*(hists->msw_bkg));
   }
   else if(fit_param == "BDT"){
-    TH1D* dathist = new TH1D(*(hists->msw_dat));
-    TH1D* bkghist = new TH1D(*(hists->msw_bkg));
+    dathist = new TH1D(*(hists->msw_dat));
+    bkghist = new TH1D(*(hists->msw_bkg));
   }
 
   //Set up
@@ -55,10 +56,10 @@ void histogram_raw_data(hists_t *hists, std::string fit_param){
   bkghist->SetStats(false);
 
   std::stringstream title;
-  title << "Raw " << hists.longoutpath;
+  title << "Raw " << hists->longoutpath;
   dathist->SetTitle(title.str().c_str());
 
-  bkghist->Scale(hists.dat_hist->Integral() / hists.bkg_hist->Integral());
+  bkghist->Scale(dathist->Integral() / bkghist->Integral());
 
   TLegend *legend;
   legend = new TLegend(0.12, 0.8, 0.3, 0.9);
@@ -84,22 +85,33 @@ void histogram_raw_data(hists_t *hists, std::string fit_param){
   delete legend;
 }
 
-void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hists){
+void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *hists, std::string fit_param){
   std::stringstream filepath;
-  filepath << "HIST_FIT_" << hists.outpath << ".png";
+  filepath << "HIST_FIT_" << fit_param << " " << hists->outpath << ".png";
+  TH1D *dathist, *bkghist, *srchist;
 
   //Copy the global histograms so that we can edit them
-  TH1D* dathist = new TH1D(*hists.dat_hist);
-  TH1D* bkghist = new TH1D(*hists.bkg_hist);
-  TH1D* srchist = new TH1D(*hists.src_hist);
-  bkghist->Scale(hists.dat_hist->Integral() / hists.bkg_hist->Integral());
-  srchist->Scale(hists.dat_hist->Integral() / hists.src_hist->Integral());
+  if(fit_param == "MSW"){
+    dathist = new TH1D(*hists->msw_dat);
+    bkghist = new TH1D(*hists->msw_bkg);
+    srchist = new TH1D(*hists->msw_src);
+  }
+  else if(fit_param == "BDT"){
+    dathist = new TH1D(*hists->bdt_dat);
+    bkghist = new TH1D(*hists->bdt_bkg);
+    srchist = new TH1D(*hists->bdt_src);
+  }
+  int dat_int = dathist->Integral();
+  int bkg_int = bkghist->Integral();
+  int src_int = srchist->Integral();
+  bkghist->Scale(dat_int / bkg_int);
+  srchist->Scale(dat_int / src_int);
 
   //Canvas set up
   TH1D* F0 = new TH1D("F0Hist", "Std Fit", NBIN, MSWLOW, MSWHIGH);
   TH1D* F1 = new TH1D("F1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
   TH1D* B1 = new TH1D("B1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
-  TCanvas *c1 = new TCanvas("",hists.outpath.c_str(),1600,1600);
+  TCanvas *c1 = new TCanvas("", hists->outpath.c_str(), 1600, 1600);
   c1->Divide(2,2);
 
   dathist->SetLineColor(4);
@@ -146,7 +158,7 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hi
   //Draw BB Src
   srchist->Scale(fracs[3]);
   src_BB(fracs[2], fracs[3], false, F1, B1);
-  B1->Scale(hists.dat_hist->Integral() / hists.bkg_hist->Integral());
+  B1->Scale(dat_int / bkg_int);
   B1->Scale(fracs[2]);
   c1->cd(2);
   F1->Draw("hist");
@@ -169,7 +181,7 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hi
   //Draw Residual
   c1->cd(3);
   F1->SetTitle("BB Residual");
-  TRatioPlot_BetterError* rp = new TRatioPlot_BetterError(F1, hists.dat_hist, "diff");
+  TRatioPlot_BetterError* rp = new TRatioPlot_BetterError(F1, dathist, "diff");
   rp->Draw();
 
   //Write Data
@@ -257,14 +269,14 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t hi
 }
 
 void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_Ps_m, indices_t ins, double alpha, hists_t hists){
-  double N_D = hists.dat_hist->Integral();
-  double N_B = hists.bkg_hist->Integral();
+  double N_D = hists.msw_dat->Integral();
+  double N_B = hists.msw_bkg->Integral();
   double B = alpha * N_B;
   double S = N_D - B;
   double P_S = S / N_D;
   double P_B = B / N_D;
 
-  double sigma_N_D = TMath::Sqrt(hists.dat_hist->Integral());
+  double sigma_N_D = TMath::Sqrt(hists.msw_dat->Integral());
   double sigma_B = TMath::Sqrt(alpha) * TMath::Sqrt(B);
   double sigma_S = TMath::Sqrt( TMath::Power(sigma_N_D, 2) + TMath::Power(sigma_B, 2) );
   double sigma_P_S = TMath::Abs(P_S) * TMath::Sqrt( TMath::Power(sigma_S / S, 2) + TMath::Power(sigma_N_D / N_D, 2) );
@@ -395,10 +407,10 @@ void plot_msw_vs_msl(hists_t *hists){
   hists->msw_msl_bkg->SetMinimum(dat < bkg ? dat : bkg);
 
   std::stringstream title;
-  title << hists->msw_msl_dat->GetTitle() << " " << hists.longoutpath;
+  title << hists->msw_msl_dat->GetTitle() << " " << hists->longoutpath;
   hists->msw_msl_dat->SetTitle(title.str().c_str());
   title.str("");
-  title << hists->msw_msl_bkg->GetTitle() << " " << hists.longoutpath;
+  title << hists->msw_msl_bkg->GetTitle() << " " << hists->longoutpath;
   hists->msw_msl_bkg->SetTitle(title.str().c_str());
 
   gStyle->SetPalette(kBlackBody);
@@ -413,6 +425,6 @@ void plot_msw_vs_msl(hists_t *hists){
   hists->msw_msl_bkg->Draw("COLZ");
 
   std::stringstream out_file;
-  out_file << "MSWMSL_" << hists.outpath << ".png";
+  out_file << "MSWMSL_" << hists->outpath << ".png";
   c1.SaveAs(out_file.str().c_str());
 }

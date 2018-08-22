@@ -186,7 +186,7 @@ bool bin_event_cache(std::string line, indices_t *ins, cuts_t *cuts, args_t *arg
   return fail;
 }
 
-void loadsrc_csv(indices_t ins, args_t args, hists_t hists){
+void loadsrc_csv(indices_t ins, args_t args, hists_t *hists){
   std::cout << "Loading Source" << std::endl;
   timestamp;
   std::ifstream srcif("src.list");
@@ -218,8 +218,8 @@ void loadsrc_csv(indices_t ins, args_t args, hists_t hists){
   while(std::getline(srcdatin, line)){
     std::vector<std::string> fields;
     boost::split(fields, line, boost::is_any_of(","));
-    if(hists->msw_src) hists->msw_src->Fill(atof(fields[1]));
-    if(hists->bdt_src) hists->bdt_src->Fill(atof(fields[2]));
+    if(hists->msw_src) hists->msw_src->Fill(atof(fields[1].c_str()));
+    if(hists->bdt_src) hists->bdt_src->Fill(atof(fields[2].c_str()));
   }
   srcdatin.close();
   if(hists->msw_src){
@@ -337,7 +337,7 @@ void cacheData_vegas(args_t args, std::string pathbase){
   cache_file.close();
 }
 
-void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIST, TH2D* HIST2D = 0){
+void loadData_sample(indices_t ins, args_t args, std::string pathbase, hists_t* hists){
   /*Load sample data that is easily and quickly repeatable for testing purposes.
    * Data hist is filled from the function 5x with ~1000 counts.
    * Bkg hist is filled from the function 5x with ~3000 counts.
@@ -347,33 +347,43 @@ void loadData_sample(indices_t ins, args_t args, std::string pathbase, TH1D* HIS
   if(pathbase == "data"){
     for(int i = 1; i <= NBIN; i++){
       double dat = 5*i + 1000/NBIN + gRandom->Gaus(0, 10);
-      HIST->SetBinContent(i, dat);
+      hists->msw_dat->SetBinContent(i, dat);
     }
   }
   if(pathbase == "bkg"){
     for(int i = 1; i <= NBIN; i++){
       double bkg = 5*i + 3000/NBIN + gRandom->Gaus(0, 10);
-      HIST->SetBinContent(i, bkg);
+      hists->msw_bkg->SetBinContent(i, bkg);
     }
   }
   if(pathbase == "src"){
     for(int i = 0; i < 30000; i++){
-      HIST->Fill(gRandom->Gaus(1, .1));
+      hists->msw_src->Fill(gRandom->Gaus(1, .1));
     }
   }
-  if(HIST2D){
+  if(hists->msw_msl_dat && pathbase == "data"){
     for(int i = 1; i <= NBIN; i++){
-      double nEvents = HIST->GetBinContent(i);
+      double nEvents = hists->msw_dat->GetBinContent(i);
       for(int j = 0; j < nEvents; j++){
-        double x = gRandom->Uniform(HIST->GetBinCenter(i) - .5*HIST->GetBinWidth(i), HIST->GetBinCenter(i) + .5*HIST->GetBinWidth(i));
+        double x = gRandom->Uniform(hists->msw_dat->GetBinCenter(i) - .5*hists->msw_dat->GetBinWidth(i), hists->msw_dat->GetBinCenter(i) + .5*hists->msw_dat->GetBinWidth(i));
         double y = gRandom->Gaus(1, .15);
-        HIST2D->Fill(x,y);
+        hists->msw_msl_dat->Fill(x,y);
+      }
+    }
+  }
+  if(hists->msw_msl_bkg && pathbase == "bkg"){
+    for(int i = 1; i <= NBIN; i++){
+      double nEvents = hists->msw_bkg->GetBinContent(i);
+        for(int j = 0; j < nEvents; j++){
+          double x = gRandom->Uniform(hists->msw_bkg->GetBinCenter(i) - .5*hists->msw_bkg->GetBinWidth(i), hists->msw_bkg->GetBinCenter(i) + .5*hists->msw_bkg->GetBinWidth(i));
+          double y = gRandom->Gaus(1, .15);
+          hists->msw_msl_bkg->Fill(x,y);
       }
     }
   }
 }
 
-double loadData_vegas(indices_t ins, args_t args, std::string pathbase, *hists){
+double loadData_vegas(indices_t ins, args_t args, std::string pathbase, hists_t *hists){
   std::stringstream cache_path;
   cache_path << "Cache_" << pathbase << ".csv";
   std::ifstream cache_file(cache_path.str().c_str());
@@ -425,26 +435,26 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, *hists){
 void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
   OUTSTR = hists->outpath;
   if(args.format == Format_t::Vegas){
-    loadData_vegas(ins, args, "data", hists->dat_hist, hists->dat_2hist);
+    loadData_vegas(ins, args, "data", hists);
     //This is not ideal. (Slightly better now)
     if(!access("bkg_sources.list", F_OK)){
       std::ifstream flist("bkg_sources.list");
       std::string line;
       while(std::getline(flist, line)){
-        loadData_vegas(ins, args, line, hists->bkg_hist, hists->bkg_2hist);
+        loadData_vegas(ins, args, line, hists);
       }
     }
     else{
-      loadData_vegas(ins, args, "bkg", hists->bkg_hist, hists->bkg_2hist);
+      loadData_vegas(ins, args, "bkg", hists);
     }
-    *alpha = hists->dat_hist->Integral() / hists->bkg_hist->Integral(); //TODO
-    loadsrc_csv(ins, args, hists->src_hist);
+    *alpha = hists->msw_dat->Integral() / hists->msw_bkg->Integral(); //TODO
+    loadsrc_csv(ins, args, hists);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
   }
   else if(args.format == Format_t::Sample){
-    loadData_sample(ins, args, "data", hists->dat_hist, hists->dat_2hist);
-    loadData_sample(ins, args, "bkg", hists->bkg_hist, hists->bkg_2hist);
-    loadData_sample(ins, args, "src", hists->src_hist);
+    loadData_sample(ins, args, "data", hists);
+    loadData_sample(ins, args, "bkg", hists);
+    loadData_sample(ins, args, "src", hists);
     *alpha = 3/5;
     std::cout << "Histograms loaded from Sample format." << std::endl;
   }

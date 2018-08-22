@@ -2,11 +2,6 @@
 #include "load_data.h"
 #include "output.h"
 
-//TODO
-//Fix histogram_fit_data
-
-
-
 std::string OUTPATH;
 std::string LONGOUTPATH;
 
@@ -711,7 +706,7 @@ int main(int argc, char* argv[]){
             if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
             //Initialize Histograms
-            hists_t *hists;
+            hists_t *hists = new hists_t;
             if(args->fit_params & 1){
               hists->msw_dat = new TH1D("MSWDataHist", "MSW Data", NBIN, MSWLOW, MSWHIGH);
               hists->msw_bkg = new TH1D("MSWBkgHist", "MSW Bkg", NBIN, MSWLOW, MSWHIGH);
@@ -753,7 +748,7 @@ int main(int argc, char* argv[]){
               else {
                 double fracs[6];
                 fit(indices, *args, alpha, 0, "MSW");
-                if(args.hist & 2) histogram_fit_data(fracs, ins, args, hists);
+                if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists, "MSW");
               }
             }
 
@@ -768,7 +763,7 @@ int main(int argc, char* argv[]){
               else{
                 double fracs[6];
                 fit(indices, *args, alpha, 0, "BDT");
-                if(args.hist & 2) histogram_fit_data(fracs, ins, args, hists);
+                if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists, "BDT");
               }
             }
 
