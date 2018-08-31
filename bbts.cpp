@@ -593,6 +593,9 @@ void bidirectional(args_t *args, indices_t indices, double alpha, std::string fi
   line << "Bkg Count = " << DAT_HIST->Integral();
   pt1->AddText(.05, .65, line.str().c_str());
   line.str("");
+  line << "Src Count = " << SRC_HIST->Integral();
+  pt1->AddText(.05, .6, line.str().c_str());
+  line.str("");
   pt1->AddLine(0, .5, 1, .5);
   pt1->AddText(.5, .4, "Bin Boundaries:");
   if(args->bin_vars & 1){
@@ -646,6 +649,9 @@ void bidirectional(args_t *args, indices_t indices, double alpha, std::string fi
   line.str("");
   line << "Bkg Count = " << BKG_HIST->Integral();
   pt2->AddText(.05, .65, line.str().c_str());
+  line.str("");
+  line << "Src Count = " << SRC_HIST->Integral();
+  pt2->AddText(.05, .60, line.str().c_str());
   line.str("");
   pt2->AddLine(0, .5, 1, .5);
   if(args->op_info.c_str()){
