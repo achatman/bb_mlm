@@ -42,8 +42,8 @@ void histogram_raw_data(hists_t *hists, std::string fit_param){
     bkghist = new TH1D(*(hists->msw_bkg));
   }
   else if(fit_param == "BDT"){
-    dathist = new TH1D(*(hists->msw_dat));
-    bkghist = new TH1D(*(hists->msw_bkg));
+    dathist = new TH1D(*(hists->bdt_dat));
+    bkghist = new TH1D(*(hists->bdt_bkg));
   }
 
   //Set up
