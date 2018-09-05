@@ -128,10 +128,33 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   F1->SetStats(false);
   B1->SetStats(false);
 
-  TLegend *legend0 = new TLegend(0.15, 0.8, 0.25, 0.9);
-  TLegend *legend1 = new TLegend(0.15, 0.8, 0.25, 0.9);
+  TLegend *legend0 = new TLegend(0.15, 0.6, 0.45, 0.9);
+  TLegend *legend1 = new TLegend(0.15, 0.6, 0.45, 0.9);
+  TLegend *legend2 = new TLegend(0.15, 0.6, 0.45, 0.9);
+
+  //Draw Raw Data
+  c1->cd(1);
+  legend0->AddEntry(dathist, "Data");
+  legend0->AddEntry(bkghist, "Background Template");
+  legend0->AddEntry(srchist, "Source Template");
+
+  bkghist->Scale(dathist->Integral() / bkghist->Integral());
+  srchist->Scale(dathist->Integral() / srchist->Integral());
+
+  dathist->SetMinimum(0);
+  dathist->SetMaximum(std::max(dathist->GetMaximum(), bkghist->GetMaximum()) * 1.1);
+
+  dathist->Draw();
+  dathist->Draw("sameE0");
+  bkghist->Draw("same");
+  bkghist->Draw("sameE0");
+  legend0->Draw();
+
+  bkghist->Scale(bkghist->Integral() / dathist->Integral());
+  srchist->Scale(srchist->Integral() / dathist->Integral());
 
   //Draw Std Src Fit
+  /*
   bkghist->Scale(fracs[0]);
   srchist->Scale(fracs[1]);
   src_noBB(fracs[0], fracs[1], false, F0);
@@ -152,8 +175,8 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   legend0->AddEntry(dathist, "di");
   legend0->AddEntry(srchist, "Si");
   legend0->Draw();
-
   srchist->Scale(1/fracs[1]);
+  */
 
   //Draw BB Src
   srchist->Scale(fracs[3]);
@@ -162,19 +185,15 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   B1->Scale(fracs[2]);
   c1->cd(2);
   F1->Draw("hist");
-  dathist->Draw("same");
-  B1->Draw("same hist");
-  srchist->Draw("same hist");
+  B1->Draw("sameE0");
+  srchist->Draw("sameE0");
 
   F1->SetMinimum(0);
-  F1->SetMaximum(std::max(
-    std::max(dathist->GetMaximum(), F1->GetMaximum()),
-                          std::max(srchist->GetMaximum(), B1->GetMaximum())
-  ) * 1.1);
+  F1->SetMaximum(std::max(F1->GetMaximum(),
+                          std::max(srchist->GetMaximum(), B1->GetMaximum()) * 1.1));
 
   legend1->AddEntry(F1, "fi");
   legend1->AddEntry(B1, "Bi");
-  legend1->AddEntry(dathist, "di");
   legend1->AddEntry(srchist, "Si");
   legend1->Draw();
 
@@ -182,12 +201,17 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   c1->cd(3);
   F1->SetTitle("BB Residual");
   TRatioPlot_BetterError* rp = new TRatioPlot_BetterError(F1, dathist, "diff");
+  rp->SetH1DrawOpt("E0");
+  rp->SetH2DrawOpt("E0");
   rp->Draw();
+  legend2->AddEntry(F1, "Fit Data");
+  legend2->AddEntry(dathist, "Raw Data");
 
   //Write Data
   c1->cd(4);
   TPaveText *pt = new TPaveText(0, 0, 1, 1);
   std::stringstream line;
+  /*
   pt->AddText(.05, .95, "Standard:")->SetTextAlign(12);
   line << "P_b = " << fracs[0];
   pt->AddText(.05, .85, line.str().c_str())->SetTextAlign(12);
@@ -197,6 +221,7 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   line.str("");
   line << "TS = " << -2 * (src_noBB(fracs[0], fracs[1]) - nosrc_noBB(fracs[4]));
   pt->AddText(.05, .75, line.str().c_str())->SetTextAlign(12);
+  */
   pt->AddText(.55, .95, "Barlow-Beeston:")->SetTextAlign(12);
   line.str("");
   line << "P_b = " << fracs[2];

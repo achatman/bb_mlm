@@ -494,15 +494,13 @@ void bidirectional(args_t *args, indices_t indices, double alpha, std::string fi
   title.str("");
   src_BB(fracs_for[2], fracs_for[3], false, dat_fit_forward, bkg_fit_forward);
   bkg_fit_forward->Scale(dat_fit_forward->Integral() / bkg_fit_forward->Integral());
-  TLegend *legend2 = new TLegend(0.12, 0.8, 0.3, 0.9);
+  TLegend *legend2 = new TLegend(0.12, 0.6, 0.4, 0.9);
   legend2->AddEntry(dat_fit_forward, "Fit Data");
   legend2->AddEntry(bkg_fit_forward, "Fit Bkg");
-  dat_fit_forward->SetMinimum(0);
-  dat_fit_forward->SetMaximum(std::max(dat_fit_forward->GetMaximum(), bkg_fit_forward->GetMaximum())*1.1);
-  dat_fit_forward->Draw();
-  dat_fit_forward->Draw("sameE0");
-  bkg_fit_forward->Draw("same");
-  bkg_fit_forward->Draw("sameE0");
+  TRatioPlot_BetterError* for_fit = new TRatioPlot_BetterError(dat_fit_forward, bkg_fit_forward, "diffsig");
+  for_fit->SetH1DrawOpt("E0");
+  for_fit->SetH2DrawOpt("E0");
+  for_fit->Draw();
   legend2->Draw();
 
   //store ts for later
@@ -519,8 +517,8 @@ void bidirectional(args_t *args, indices_t indices, double alpha, std::string fi
   c1->cd(4);
   TH1D* dat_fit_back = new TH1D("DFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
   TH1D* bkg_fit_back = new TH1D("BFit_Back", "Backward", NBIN, MSWLOW, MSWHIGH);
-  dat_fit_back->SetLineColor(4);
-  bkg_fit_back->SetLineColor(6);
+  dat_fit_back->SetLineColor(6);
+  bkg_fit_back->SetLineColor(4);
   dat_fit_back->SetStats(false);
   bkg_fit_back->SetStats(false);
   title << OUTPATH << " " << "Fit Backward";
@@ -528,15 +526,13 @@ void bidirectional(args_t *args, indices_t indices, double alpha, std::string fi
   title.str("");
   src_BB(fracs_back[2], fracs_back[3], false, dat_fit_back, bkg_fit_back);
   bkg_fit_back->Scale(dat_fit_back->Integral() / bkg_fit_back->Integral());
-  TLegend *legend4 = new TLegend(0.12, 0.8, 0.3, 0.9);
-  legend4->AddEntry(dat_fit_back, "Fit Data");
-  legend4->AddEntry(bkg_fit_back, "Fit Bkg");
-  dat_fit_back->SetMinimum(0);
-  dat_fit_back->SetMaximum(std::max(dat_fit_back->GetMaximum(), bkg_fit_back->GetMaximum())*1.1);
-  dat_fit_back->Draw();
-  dat_fit_back->Draw("sameE0");
-  bkg_fit_back->Draw("same");
-  bkg_fit_back->Draw("sameE0");
+  TLegend *legend4 = new TLegend(0.12, 0.6, 0.4, 0.9);
+  legend4->AddEntry(dat_fit_back, "Fit Bkg");
+  legend4->AddEntry(bkg_fit_back, "Fit Data");
+  TRatioPlot_BetterError* back_fit = new TRatioPlot_BetterError(dat_fit_back, bkg_fit_back, "diffsig");
+  back_fit->SetH1DrawOpt("E0");
+  back_fit->SetH1DrawOpt("E0");
+  back_fit->Draw();
   legend4->Draw();
 
   //Plot Raw Comp & Pulls
@@ -551,12 +547,13 @@ void bidirectional(args_t *args, indices_t indices, double alpha, std::string fi
   rp_raw->SetH1DrawOpt("E0");
   rp_raw->SetH2DrawOpt("E0");
   rp_raw->Draw();
-  TLegend *legend5 = new TLegend(0.12, 0.8, 0.3, 0.9);
-  legend5->AddEntry(dat1, "Sample 1");
-  legend5->AddEntry(dat2, "Sample 2");
+  TLegend *legend5 = new TLegend(0.12, 0.6, 0.4, 0.9);
+  legend5->AddEntry(dat1, "Data");
+  legend5->AddEntry(dat2, "Background");
   legend5->Draw();
 
   //Plot Fit Comp & Pulls
+  /*
   c1->cd(5);
   TH1D* fit1 = new TH1D(*dat_fit_forward);
   TH1D* fit2 = new TH1D(*dat_fit_back);
@@ -572,6 +569,7 @@ void bidirectional(args_t *args, indices_t indices, double alpha, std::string fi
   legend6->AddEntry(fit1, "Sample 1");
   legend6->AddEntry(fit2, "Sample 2");
   legend6->Draw();
+  */
 
   //Write Forward Fit Data
   c1->cd(3);
@@ -692,11 +690,11 @@ void bidirectional(args_t *args, indices_t indices, double alpha, std::string fi
   delete legend2;
   delete legend4;
   delete legend5;
-  delete legend6;
+//   delete legend6;
   delete dat1;
   delete dat2;
-  delete fit1;
-  delete fit2;
+//   delete fit1;
+//   delete fit2;
 }
 
 int main(int argc, char* argv[]){
