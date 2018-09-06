@@ -278,7 +278,7 @@ void cacheData_vegas(args_t args, std::string pathbase){
 
     TTreeReader reader("SelectedEvents/CombinedEventsTree", f);
     TTreeReaderValue<VAShowerData> shower(reader, "S");
-    TTreeReaderValue<double> bdt(reader, "BDTscore");
+    TTreeReaderValue<double> bdt(reader, "BDTScore");
 
     while(reader.Next()){
       cuts.read++;
