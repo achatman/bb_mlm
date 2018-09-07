@@ -223,9 +223,13 @@ void loadsrc_csv(indices_t ins, args_t args, hists_t *hists){
   }
   srcdatin.close();
   if(hists->msw_src){
+      hists->msw_src->SetBinContent(0, 0);
+      hists->msw_src->SetBinContent(NBIN+1, 0);
       std::cout << hists->msw_src->Integral() << " events loaded for msw source." << std::endl;
   }
   if(hists->bdt_src){
+      hists->bdt_src->SetBinContent(0, 0);
+      hists->bdt_src->SetBinContent(NBIN+1, 0);
       std::cout << hists->bdt_src->Integral() << " events loaded for bdt source." << std::endl;
   }
 }
@@ -429,6 +433,21 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, hists_t 
   std::cout << cuts.off << " failed off cut." << std::endl;
 
   if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
+
+  //Remove underflow and overflow
+  if(pathbase == "data"){
+    if(hists->msw_dat) hists->msw_dat->SetBinContent(0, 0);
+    if(hists->msw_dat) hists->msw_dat->SetBinContent(NBIN+1, 0);
+    if(hists->msw_bkg) hists->msw_bkg->SetBinContent(0, 0);
+    if(hists->msw_bkg) hists->msw_bkg->SetBinContent(NBIN+1, 0);
+  }
+  else {
+    if(hists->bdt_dat) hists->bdt_dat->SetBinContent(0, 0);
+    if(hists->bdt_dat) hists->bdt_dat->SetBinContent(NBIN+1, 0);
+    if(hists->bdt_bkg) hists->bdt_bkg->SetBinContent(0, 0);
+    if(hists->bdt_bkg) hists->bdt_bkg->SetBinContent(NBIN+1, 0);
+  }
+
   return 1;
 }
 

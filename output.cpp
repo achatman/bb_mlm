@@ -91,26 +91,29 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   TH1D *dathist, *bkghist, *srchist;
 
   //Copy the global histograms so that we can edit them
+  TH1D *F0, *F1, *B1;
   if(fit_param == "MSW"){
     dathist = new TH1D(*hists->msw_dat);
     bkghist = new TH1D(*hists->msw_bkg);
     srchist = new TH1D(*hists->msw_src);
+    F0 = new TH1D("F0Hist", "Std Fit", NBIN, MSWLOW, MSWHIGH);
+    F1 = new TH1D("F1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
+    B1 = new TH1D("B1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
   }
   else if(fit_param == "BDT"){
     dathist = new TH1D(*hists->bdt_dat);
     bkghist = new TH1D(*hists->bdt_bkg);
     srchist = new TH1D(*hists->bdt_src);
+    F0 = new TH1D("F0Hist", "Std Fit", NBIN, BDTLOW, BDTHIGH);
+    F1 = new TH1D("F1Hist", "BB Fit", NBIN, BDTLOW, BDTHIGH);
+    B1 = new TH1D("B1Hist", "BB Fit", NBIN, BDTLOW, BDTHIGH);
   }
-  int dat_int = dathist->Integral();
-  int bkg_int = bkghist->Integral();
-  int src_int = srchist->Integral();
-  bkghist->Scale(dat_int / bkg_int);
-  srchist->Scale(dat_int / src_int);
+  double dat_int = dathist->Integral();
+  double bkg_int = bkghist->Integral();
+  double src_int = srchist->Integral();
 
   //Canvas set up
-  TH1D* F0 = new TH1D("F0Hist", "Std Fit", NBIN, MSWLOW, MSWHIGH);
-  TH1D* F1 = new TH1D("F1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
-  TH1D* B1 = new TH1D("B1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
+  
   TCanvas *c1 = new TCanvas("", hists->outpath.c_str(), 1600, 1600);
   c1->Divide(2,2);
 
@@ -138,8 +141,8 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   legend0->AddEntry(bkghist, "Background Template");
   legend0->AddEntry(srchist, "Source Template");
 
-  bkghist->Scale(dathist->Integral() / bkghist->Integral());
-  srchist->Scale(dathist->Integral() / srchist->Integral());
+  bkghist->Scale(dat_int / bkg_int);
+  srchist->Scale(dat_int / src_int);
 
   dathist->SetMinimum(0);
   dathist->SetMaximum(std::max(dathist->GetMaximum(), bkghist->GetMaximum()) * 1.1);
@@ -148,10 +151,11 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   dathist->Draw("sameE0");
   bkghist->Draw("same");
   bkghist->Draw("sameE0");
+  srchist->Draw("same");
   legend0->Draw();
 
-  bkghist->Scale(bkghist->Integral() / dathist->Integral());
-  srchist->Scale(srchist->Integral() / dathist->Integral());
+  bkghist->Scale(bkg_int / dat_int);
+  srchist->Scale(src_int / dat_int);
 
   //Draw Std Src Fit
   /*
@@ -181,7 +185,6 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   //Draw BB Src
   srchist->Scale(fracs[3]);
   src_BB(fracs[2], fracs[3], false, F1, B1);
-  B1->Scale(dat_int / bkg_int);
   B1->Scale(fracs[2]);
   c1->cd(2);
   F1->Draw("hist");
@@ -206,6 +209,7 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   rp->Draw();
   legend2->AddEntry(F1, "Fit Data");
   legend2->AddEntry(dathist, "Raw Data");
+  legend2->Draw();
 
   //Write Data
   c1->cd(4);
@@ -222,16 +226,16 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   line << "TS = " << -2 * (src_noBB(fracs[0], fracs[1]) - nosrc_noBB(fracs[4]));
   pt->AddText(.05, .75, line.str().c_str())->SetTextAlign(12);
   */
-  pt->AddText(.55, .95, "Barlow-Beeston:")->SetTextAlign(12);
+  pt->AddText(.35, .95, "Barlow-Beeston:")->SetTextAlign(12);
   line.str("");
   line << "P_b = " << fracs[2];
-  pt->AddText(.55, .85, line.str().c_str())->SetTextAlign(12);
+  pt->AddText(.35, .85, line.str().c_str())->SetTextAlign(12);
   line.str("");
   line << "P_s = " << fracs[3];
-  pt->AddText(.55, .8, line.str().c_str())->SetTextAlign(12);
+  pt->AddText(.35, .8, line.str().c_str())->SetTextAlign(12);
   line.str("");
   line << "TS = " << -2 * (src_BB(fracs[2], fracs[3]) - nosrc_BB(fracs[5]));
-  pt->AddText(.55, .75, line.str().c_str())->SetTextAlign(12);
+  pt->AddText(.35, .75, line.str().c_str())->SetTextAlign(12);
   line.str("");
   if(args->bin_vars & 1){
     line << "ZA: " << ZABINS[ins.za] << "-" << ZABINS[ins.za+1];

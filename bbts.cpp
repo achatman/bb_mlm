@@ -702,7 +702,7 @@ int main(int argc, char* argv[]){
   if(parse_command_line(argc, argv, args)) return 1;
   prepare_std_output_files(*args);
   indices_t indices;
-  for(indices.za = 0; indices.za < 6; indices.za++){
+  for(indices.za = 3; indices.za < 6; indices.za++){
     for(indices.e = 0; indices.e < 4; indices.e++){
       for(indices.tel = 0; indices.tel < 2; indices.tel++){
         for(indices.az = 0; indices.az < 8; indices.az++){
@@ -751,7 +751,7 @@ int main(int argc, char* argv[]){
               if(args->bidir) bidirectional(args, indices, alpha, "MSW");
               else {
                 double fracs[6];
-                fit(indices, *args, alpha, 0, "MSW");
+                fit(indices, *args, alpha, fracs, "MSW");
                 if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists, "MSW");
               }
             }
@@ -766,7 +766,7 @@ int main(int argc, char* argv[]){
               if(args->bidir) bidirectional(args, indices, alpha, "BDT");
               else{
                 double fracs[6];
-                fit(indices, *args, alpha, 0, "BDT");
+                fit(indices, *args, alpha, fracs, "BDT");
                 if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists, "BDT");
               }
             }
