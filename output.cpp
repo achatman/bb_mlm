@@ -297,6 +297,45 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   delete legend1;
 }
 
+void print_errors(TFitter *fitter, std::string fit_param, std::string pathbase){
+  std::stringstream fname;
+  fname << "Errors_" << fit_param << ".csv";
+  if(access(fname.str().c_str(), F_OK)){
+    std::ofstream f(fname.str().c_str());
+    f << PRINTSPACE << "Bin"
+      << PRINTSPACE << "Parameter"
+      << PRINTSPACE << "eplus"
+      << PRINTSPACE << "eminus"
+      << PRINTSPACE << "eparab"
+      << PRINTSPACE << "globcc"
+      << PRINTSPACE << "Parameter"
+      << PRINTSPACE << "eplus"
+      << PRINTSPACE << "eminus"
+      << PRINTSPACE << "eparab"
+      << PRINTSPACE << "globcc" << std::endl;
+    f.close();
+  }
+  double eplus, eminus, eparab, globcc;
+  fitter->GetErrors(0, eplus, eminus, eparab, globcc);
+
+  std::ofstream f(fname.str().c_str(), std::ios::out | std::ios::app);
+  f << PRINTSPACE << pathbase
+    << PRINTSPACE << "bkgfrac"
+    << PRINTSPACE << eplus
+    << PRINTSPACE << eminus
+    << PRINTSPACE << eparab
+    << PRINTSPACE << globcc;
+
+  fitter->GetErrors(0, eplus, eminus, eparab, globcc);
+  f << PRINTSPACE << "srcfrac"
+    << PRINTSPACE << eplus
+    << PRINTSPACE << eminus
+    << PRINTSPACE << eparab
+    << PRINTSPACE << globcc << std::endl;
+  f.close();
+}
+
+
 void calculate_errors(double Pb_m, double Ps_m, double sigma_Pb_m, double sigma_Ps_m, indices_t ins, double alpha, hists_t hists){
   double N_D = hists.msw_dat->Integral();
   double N_B = hists.msw_bkg->Integral();
@@ -349,26 +388,26 @@ void print_cuts(std::string pathbase, cuts_t* cuts, std::string outpath){
   if(access(fname.str().c_str(), F_OK)){
     std::ofstream f(fname.str().c_str());
     f << PRINTSPACE << "Bin"
-    << PRINTSPACE << "passed"
-    << PRINTSPACE << "read"
-    << PRINTSPACE << "source"
-    << PRINTSPACE << "telescope"
-    << PRINTSPACE << "energy"
-    << PRINTSPACE << "zenith angle"
-    << PRINTSPACE << "azimuth"
-    << PRINTSPACE << "offset" << std::endl;
+      << PRINTSPACE << "passed"
+      << PRINTSPACE << "read"
+      << PRINTSPACE << "source"
+      << PRINTSPACE << "telescope"
+      << PRINTSPACE << "energy"
+      << PRINTSPACE << "zenith angle"
+      << PRINTSPACE << "azimuth"
+      << PRINTSPACE << "offset" << std::endl;
     f.close();
   }
   std::ofstream f(fname.str().c_str(), std::ios::out | std::ios::app);
   f << PRINTSPACE << outpath
-  << PRINTSPACE << cuts->passed
-  << PRINTSPACE << cuts->read
-  << PRINTSPACE << cuts->src
-  << PRINTSPACE << cuts->tel
-  << PRINTSPACE << cuts->e
-  << PRINTSPACE << cuts->za
-  << PRINTSPACE << cuts->az
-  << PRINTSPACE << cuts->off << std::endl;
+    << PRINTSPACE << cuts->passed
+    << PRINTSPACE << cuts->read
+    << PRINTSPACE << cuts->src
+    << PRINTSPACE << cuts->tel
+    << PRINTSPACE << cuts->e
+    << PRINTSPACE << cuts->za
+    << PRINTSPACE << cuts->az
+    << PRINTSPACE << cuts->off << std::endl;
   f.close();
 }
 
