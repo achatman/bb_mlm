@@ -205,10 +205,10 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   line << "P_s = " << fracs[3] << " #pm " << err_ps;
   pt->AddText(.1, .8, line.str().c_str())->SetTextAlign(12);
   line.str("");
-  line << std::defaultfloat << std::setprecision(3);
   line << "TS = " << -2 * (src_BB(fracs[2], fracs[3]) - nosrc_BB(fracs[5]));
   pt->AddText(.1, .75, line.str().c_str())->SetTextAlign(12);
   line.str("");
+  line << std::defaultfloat;
   if(args->bin_vars & 1){
     line << "ZA: " << ZABINS[ins.za] << "-" << ZABINS[ins.za+1];
     pt->AddText(.05, .65, line.str().c_str())->SetTextAlign(12);
