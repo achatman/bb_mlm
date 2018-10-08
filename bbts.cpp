@@ -376,16 +376,16 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs, std::string fi
   fit_src_bb    ->SetParameter(0, "bkgFrac", .5, .5, 0, 1);
   fit_src_nobb  ->SetParameter(1, "srcFrac", .5, .5, 0, 1);
   fit_src_bb    ->SetParameter(1, "srcFrac", .5, .5, 0, 1);
-  //Run SIMPLEX
-  fit_nosrc_nobb->ExecuteCommand("SIMPLEX", 0, 0);
-  fit_src_nobb  ->ExecuteCommand("SIMPLEX", 0, 0);
-  fit_nosrc_bb  ->ExecuteCommand("SIMPLEX", 0, 0);
-  fit_src_bb    ->ExecuteCommand("SIMPLEX", 0, 0);
   //Run MIGRAD
   fit_nosrc_nobb->ExecuteCommand("MIGRAD", 0, 0);
   fit_src_nobb  ->ExecuteCommand("MIGRAD", 0, 0);
   fit_nosrc_bb  ->ExecuteCommand("MIGRAD", 0, 0);
   fit_src_bb    ->ExecuteCommand("MIGRAD", 0, 0);
+  //Run MINOS
+  fit_nosrc_nobb->ExecuteCommand("MINOS", 0, 0);
+  fit_src_nobb  ->ExecuteCommand("MINOS", 0, 0);
+  fit_nosrc_bb  ->ExecuteCommand("MINOS", 0, 0);
+  fit_src_bb    ->ExecuteCommand("MINOS", 0, 0);
 
   //Get likelihood and TS
   bool output_bins = (args.output & 1) && (DAT_HIST->Integral() + BKG_HIST->Integral());
