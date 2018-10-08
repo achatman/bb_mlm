@@ -352,7 +352,7 @@ void wrapper_nosrc_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t pa
 
 void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1]); }
 
-void fit(indices_t ins, args_t args, double alpha, double *fracs, std::string fit_param){
+void fit(indices_t ins, args_t args, double alpha, double *fracs, std::string fit_param, hists_t *hists=0){
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
   TFitter* fit_src_nobb   = new TFitter(2);
@@ -449,26 +449,18 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs, std::string fi
     << lima_bb << std::endl;
   f.close();
 
-  /*
-  if(args.output & 4){
-    calculate_errors(fit_src_bb->GetParameter(0),
-                    fit_src_bb->GetParameter(1),
-                    fit_src_bb->GetParError(0),
-                    fit_src_bb->GetParError(1),
-                    ins, alpha, hists);
-  }
-  */
+  fracs[0] = fit_src_nobb->GetParameter(0);
+  fracs[1] = fit_src_nobb->GetParameter(1);
+  fracs[2] = fit_src_bb->GetParameter(0);
+  fracs[3] = fit_src_bb->GetParameter(1);
+  fracs[4] = fit_nosrc_nobb->GetParameter(0);
+  fracs[5] = fit_nosrc_bb->GetParameter(0);
+
+  if(args.hist & 2 && hists) histogram_fit_data(fracs, ins, &args, hists, fit_param, fit_src_bb);
+  if(args.output & 4) print_errors(fit_src_bb, fit_param, OUTPATH);
   if(args.graphics & 1) map_likelihood(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1), "Std", ins, args, OUTPATH, LONGOUTPATH);
   if(args.graphics & 2) map_likelihood(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), "BB", ins, args, OUTPATH, LONGOUTPATH);
 
-  if(fracs){
-    fracs[0] = fit_src_nobb->GetParameter(0);
-    fracs[1] = fit_src_nobb->GetParameter(1);
-    fracs[2] = fit_src_bb->GetParameter(0);
-    fracs[3] = fit_src_bb->GetParameter(1);
-    fracs[4] = fit_nosrc_nobb->GetParameter(0);
-    fracs[5] = fit_nosrc_bb->GetParameter(0);
-  }
 }
 
 void bidirectional(args_t *args, indices_t indices, double alpha, std::string fit_param){
@@ -751,8 +743,7 @@ int main(int argc, char* argv[]){
               if(args->bidir) bidirectional(args, indices, alpha, "MSW");
               else {
                 double fracs[6];
-                fit(indices, *args, alpha, fracs, "MSW");
-                if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists, "MSW");
+                fit(indices, *args, alpha, fracs, "MSW", hists);
               }
             }
 
@@ -766,8 +757,7 @@ int main(int argc, char* argv[]){
               if(args->bidir) bidirectional(args, indices, alpha, "BDT");
               else{
                 double fracs[6];
-                fit(indices, *args, alpha, fracs, "BDT");
-                if(args->hist & 2) histogram_fit_data(fracs, indices, args, hists, "BDT");
+                fit(indices, *args, alpha, fracs, "BDT", hists);
               }
             }
 

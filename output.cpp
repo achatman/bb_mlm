@@ -85,7 +85,7 @@ void histogram_raw_data(hists_t *hists, std::string fit_param){
   delete legend;
 }
 
-void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *hists, std::string fit_param){
+void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *hists, std::string fit_param, TFitter *fitter){
   std::stringstream filepath;
   filepath << "HIST_FIT_" << fit_param << " " << hists->outpath << ".png";
   TH1D *dathist, *bkghist, *srchist;
@@ -186,20 +186,28 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   legend2->AddEntry(dathist, "Raw");
   legend2->Draw();
 
+  //Get Errors from Fitters
+  double a, b, c;
+  double err_pb, err_ps;
+  fitter->GetErrors(0, a, b, err_pb, c);
+  fitter->GetErrors(1, a, b, err_ps, c);
+
   //Write Data
   c1->cd(4);
   TPaveText *pt = new TPaveText(0, 0, 1, 1);
   std::stringstream line;
   pt->AddText(.35, .95, "Barlow-Beeston:")->SetTextAlign(12);
   line.str("");
-  line << "P_b = " << fracs[2];
-  pt->AddText(.35, .85, line.str().c_str())->SetTextAlign(12);
+  line << std::scientific << std::setprecision(3);
+  line << "P_b = " << fracs[2] << " #pm " << err_pb;
+  pt->AddText(.1, .85, line.str().c_str())->SetTextAlign(12);
   line.str("");
-  line << "P_s = " << fracs[3];
-  pt->AddText(.35, .8, line.str().c_str())->SetTextAlign(12);
+  line << "P_s = " << fracs[3] << " #pm " << err_ps;
+  pt->AddText(.1, .8, line.str().c_str())->SetTextAlign(12);
   line.str("");
+  line << std::defaultfloat << std::setprecision(3);
   line << "TS = " << -2 * (src_BB(fracs[2], fracs[3]) - nosrc_BB(fracs[5]));
-  pt->AddText(.35, .75, line.str().c_str())->SetTextAlign(12);
+  pt->AddText(.1, .75, line.str().c_str())->SetTextAlign(12);
   line.str("");
   if(args->bin_vars & 1){
     line << "ZA: " << ZABINS[ins.za] << "-" << ZABINS[ins.za+1];
@@ -289,7 +297,7 @@ void print_errors(TFitter *fitter, std::string fit_param, std::string pathbase){
     << PRINTSPACE << eparab
     << PRINTSPACE << globcc;
 
-  fitter->GetErrors(0, eplus, eminus, eparab, globcc);
+  fitter->GetErrors(1, eplus, eminus, eparab, globcc);
   f << PRINTSPACE << "srcfrac"
     << PRINTSPACE << eplus
     << PRINTSPACE << eminus
