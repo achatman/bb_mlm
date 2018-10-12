@@ -85,32 +85,31 @@ void histogram_raw_data(hists_t *hists, std::string fit_param){
   delete legend;
 }
 
-void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *hists, std::string fit_param){
+void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *hists, std::string fit_param, TFitter *fitter){
   std::stringstream filepath;
   filepath << "HIST_FIT_" << fit_param << " " << hists->outpath << ".png";
   TH1D *dathist, *bkghist, *srchist;
 
   //Copy the global histograms so that we can edit them
-  TH1D *F0, *F1, *B1;
+  TH1D *F1, *B1;
   if(fit_param == "MSW"){
     dathist = new TH1D(*hists->msw_dat);
     bkghist = new TH1D(*hists->msw_bkg);
     srchist = new TH1D(*hists->msw_src);
-    F0 = new TH1D("F0Hist", "Std Fit", NBIN, MSWLOW, MSWHIGH);
-    F1 = new TH1D("F1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
+    F1 = new TH1D("F1Hist", "MSW Fit", NBIN, MSWLOW, MSWHIGH);
     B1 = new TH1D("B1Hist", "BB Fit", NBIN, MSWLOW, MSWHIGH);
   }
   else if(fit_param == "BDT"){
     dathist = new TH1D(*hists->bdt_dat);
     bkghist = new TH1D(*hists->bdt_bkg);
     srchist = new TH1D(*hists->bdt_src);
-    F0 = new TH1D("F0Hist", "Std Fit", NBIN, BDTLOW, BDTHIGH);
-    F1 = new TH1D("F1Hist", "BB Fit", NBIN, BDTLOW, BDTHIGH);
+    F1 = new TH1D("F1Hist", "BDT Fit", NBIN, BDTLOW, BDTHIGH);
     B1 = new TH1D("B1Hist", "BB Fit", NBIN, BDTLOW, BDTHIGH);
   }
   double dat_int = dathist->Integral();
   double bkg_int = bkghist->Integral();
   double src_int = srchist->Integral();
+  TH1D* raw_src = new TH1D(*srchist);
 
   //Canvas set up
   
@@ -120,29 +119,29 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   dathist->SetLineColor(4);
   bkghist->SetLineColor(6);
   srchist->SetLineColor(1);
-  F0->SetLineColor(8);
+  raw_src->SetLineColor(1);
   F1->SetLineColor(8);
   B1->SetLineColor(6);
 
   dathist->SetStats(false);
   bkghist->SetStats(false);
   srchist->SetStats(false);
-  F0->SetStats(false);
+  raw_src->SetStats(false);
   F1->SetStats(false);
   B1->SetStats(false);
 
   TLegend *legend0 = new TLegend(0.15, 0.6, 0.45, 0.9);
-  TLegend *legend1 = new TLegend(0.15, 0.6, 0.45, 0.9);
-  TLegend *legend2 = new TLegend(0.15, 0.6, 0.45, 0.9);
+  TLegend *legend1 = new TLegend(0.15, 0.6, 0.3, 0.9);
+  TLegend *legend2 = new TLegend(0.15, 0.7, 0.3, 0.9);
 
   //Draw Raw Data
   c1->cd(1);
   legend0->AddEntry(dathist, "Data");
   legend0->AddEntry(bkghist, "Background Template");
-  legend0->AddEntry(srchist, "Source Template");
+  legend0->AddEntry(raw_src, "Source Template");
 
   bkghist->Scale(dat_int / bkg_int);
-  srchist->Scale(dat_int / src_int);
+  raw_src->Scale(dat_int / src_int);
 
   dathist->SetMinimum(0);
   dathist->SetMaximum(std::max(dathist->GetMaximum(), bkghist->GetMaximum()) * 1.1);
@@ -151,24 +150,23 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   dathist->Draw("sameE0");
   bkghist->Draw("same");
   bkghist->Draw("sameE0");
-  srchist->Draw("same");
+  raw_src->Draw("sameE0");
   legend0->Draw();
 
-  bkghist->Scale(bkg_int / dat_int);
-  srchist->Scale(src_int / dat_int);
-
   //Draw BB Src
-  srchist->Scale(fracs[3]);
-  src_BB(fracs[2], fracs[3], false, F1, B1);
-  B1->Scale(fracs[2]);
   c1->cd(2);
-  F1->Draw("hist");
+  src_BB(fracs[2], fracs[3], false, F1, B1);
+  srchist->Scale(fracs[3]);
+  srchist->Scale(dat_int / src_int);
+  B1->Scale(fracs[2]);
+  B1->Scale(dat_int / bkg_int);
+  F1->Draw();
+  F1->Draw("sameE0");
   B1->Draw("sameE0");
   srchist->Draw("sameE0");
 
   F1->SetMinimum(0);
-  F1->SetMaximum(std::max(F1->GetMaximum(),
-                          std::max(srchist->GetMaximum(), B1->GetMaximum()) * 1.1));
+  F1->SetMaximum(std::max(F1->GetMaximum(), B1->GetMaximum()) *1.1);
 
   legend1->AddEntry(F1, "fi");
   legend1->AddEntry(B1, "Bi");
@@ -177,14 +175,22 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
 
   //Draw Residual
   c1->cd(3);
-  F1->SetTitle("BB Residual");
-  TRatioPlot_BetterError* rp = new TRatioPlot_BetterError(F1, dathist, "diff");
+  TH1D* F1copy = new TH1D(*F1);
+  F1copy->SetTitle("Residual");
+  F1copy->SetMaximum(std::max(F1copy->GetMaximum(), dathist->GetMaximum()) *1.1);
+  TRatioPlot_BetterError* rp = new TRatioPlot_BetterError(F1copy, dathist, "diffsig");
   rp->SetH1DrawOpt("E0");
   rp->SetH2DrawOpt("E0");
   rp->Draw();
-  legend2->AddEntry(F1, "Fit Data");
-  legend2->AddEntry(dathist, "Raw Data");
+  legend2->AddEntry(F1copy, "Fit");
+  legend2->AddEntry(dathist, "Raw");
   legend2->Draw();
+
+  //Get Errors from Fitters
+  double a, b, c;
+  double err_pb, err_ps;
+  fitter->GetErrors(0, a, b, err_pb, c);
+  fitter->GetErrors(1, a, b, err_ps, c);
 
   //Write Data
   c1->cd(4);
@@ -192,15 +198,17 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   std::stringstream line;
   pt->AddText(.35, .95, "Barlow-Beeston:")->SetTextAlign(12);
   line.str("");
-  line << "P_b = " << fracs[2];
-  pt->AddText(.35, .85, line.str().c_str())->SetTextAlign(12);
+  line << std::scientific << std::setprecision(3);
+  line << "P_b = " << fracs[2] << " #pm " << err_pb;
+  pt->AddText(.1, .85, line.str().c_str())->SetTextAlign(12);
   line.str("");
-  line << "P_s = " << fracs[3];
-  pt->AddText(.35, .8, line.str().c_str())->SetTextAlign(12);
+  line << "P_s = " << fracs[3] << " #pm " << err_ps;
+  pt->AddText(.1, .8, line.str().c_str())->SetTextAlign(12);
   line.str("");
   line << "TS = " << -2 * (src_BB(fracs[2], fracs[3]) - nosrc_BB(fracs[5]));
-  pt->AddText(.35, .75, line.str().c_str())->SetTextAlign(12);
+  pt->AddText(.1, .75, line.str().c_str())->SetTextAlign(12);
   line.str("");
+  line << std::defaultfloat;
   if(args->bin_vars & 1){
     line << "ZA: " << ZABINS[ins.za] << "-" << ZABINS[ins.za+1];
     pt->AddText(.05, .65, line.str().c_str())->SetTextAlign(12);
@@ -254,7 +262,6 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   delete dathist;
   delete bkghist;
   delete srchist;
-  delete F0;
   delete F1;
   delete B1;
   delete legend0;
@@ -290,7 +297,7 @@ void print_errors(TFitter *fitter, std::string fit_param, std::string pathbase){
     << PRINTSPACE << eparab
     << PRINTSPACE << globcc;
 
-  fitter->GetErrors(0, eplus, eminus, eparab, globcc);
+  fitter->GetErrors(1, eplus, eminus, eparab, globcc);
   f << PRINTSPACE << "srcfrac"
     << PRINTSPACE << eplus
     << PRINTSPACE << eminus
