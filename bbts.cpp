@@ -398,9 +398,10 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs, std::string fi
   double lima_nobb = lima_sig(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1));
   double lima_bb = lima_sig(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1));
 
-  std::stringstream std_output, bb_output;
+  std::stringstream std_output, bb_output, summary;
   std_output << "fitstats_" << fit_param << "_std.csv";
   bb_output << "fitstats_" << fit_param << "_bb.csv";
+  summary << "summary_" << fit_param << ".csv";
   std::ofstream f(std_output.str(), std::ios::out | std::ios::app);
   if(args.bin_vars & 1) f << ins.za << ",";
   if(args.bin_vars & 2) f << ins.e << ",";
@@ -438,6 +439,27 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs, std::string fi
     << lnL_src_bb << ","
     << TS_bb << std::endl;
   f.close();
+
+  double signal = DAT_HIST->Integral() * fit_src_bb->GetParameter(1);
+  f.open(summary.str(), std::ios::out | std::ios::app);
+  if(args.bin_vars & 1) f << ins.za << ",";
+  if(args.bin_vars & 2) f << ins.e << ",";
+  if(args.bin_vars & 4) f << ins.tel << ",";
+  if(args.bin_vars & 8) f << ins.az << ",";
+  if(args.bin_vars & 16) f << ins.off << ",";
+  f << std::scientific
+    << fit_src_bb->GetParameter(0) << ","
+    << fit_src_bb->GetParError(0) << ","
+    << fit_src_bb->GetParameter(1) << ","
+    << fit_src_bb->GetParError(1) << ","
+    << std::defaultfloat
+    << DAT_HIST->Integral() << ","
+    << BKG_HIST->Integral() << ","
+    << SRC_HIST->Integral() << ","
+    << TS_bb << ","
+    << signal << ","
+    << fit_src_bb->GetParError(1) << std::endl;
+
 
   fracs[0] = fit_src_nobb->GetParameter(0);
   fracs[1] = fit_src_nobb->GetParameter(1);
@@ -946,13 +968,16 @@ OPTIONS:
 
 void prepare_std_output_files(args_t args){
   std::vector<std::string> outfiles;
+  std::vector<std::string> summary_files;
   if(args.fit_params & 1){
     outfiles.push_back("fitstats_MSW_std.csv");
     outfiles.push_back("fitstats_MSW_bb.csv");
+    summary_files.push_back("summary_MSW.csv");
   }
   if(args.fit_params & 2){
     outfiles.push_back("fitstats_BDT_std.csv");
     outfiles.push_back("fitstats_BDT_bb.csv");
+    summary_files.push_back("summary_BDT.csv");
   }
   for(std::string str : outfiles){
     std::ofstream f(str);
@@ -964,6 +989,17 @@ void prepare_std_output_files(args_t args){
     f << "bkgfrac_nosrc, bkgfrac, srcfrac, dataCt, bkgCt, srcCt, lnL_nosrc, lnL_src, TS" << std::endl;
     f.close();
   }
+  for(std::string str : summary_files){
+    std::ofstream f(str);
+    if(args.bin_vars & 1)  f << "ZA,";
+    if(args.bin_vars & 2)  f << "E,";
+    if(args.bin_vars & 4)  f << "T,";
+    if(args.bin_vars & 8)  f << "A,";
+    if(args.bin_vars & 16) f << "O,";
+    f << "bkgfrac,e_bkgfrac,srcfrac,e_srcfrac,dataCt,bkgCt,srcCt,TS,Signal,e_Signal" << std::endl;
+    f.close();
+  }
+
 }
 
 int optional_binning(indices_t indices, args_t args){
