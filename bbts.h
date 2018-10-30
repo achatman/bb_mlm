@@ -43,8 +43,8 @@
 #define PRINTSPACE std::left << std::setw(PW)
 #define MSWLOW 0.7875
 #define MSWHIGH 1.3125
-#define BDTLOW 0.6
-#define BDTHIGH 1.0
+#define BDTLOW 0.589
+#define BDTHIGH 1.011
 #define NBIN 20
 #define PW 15
 
