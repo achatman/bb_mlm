@@ -482,19 +482,4 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
     throw 999;
   }
 
-  if(bkg_centers.size()){
-    for(auto &i : bkg_centers){
-      for(auto &j : bkg_centers){
-        if(i != j){
-          VACoordinatePair icoord = VACoordinatePair(i.first,i.second,VACoordinates::J2000,VACoordinates::Deg);
-          VACoordinatePair jcoord = VACoordinatePair(j.first,j.second,VACoordinates::J2000,VACoordinates::Deg);
-          if(icoord.angularSeparation_Deg(jcoord) < 3.5){
-            std::cerr << "Background Overlap: Two background sources are within 3.5 degrees of each other." << std::endl;
-          }
-        }
-      }
-    }
-  }
-
-
 }
