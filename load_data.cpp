@@ -474,7 +474,7 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, hists_t 
   return 1;
 }
 
-double loadData_custom(indices_t ins, args_t args, std::string pathbase, hists_t *hists){
+double loadData_bbmlm(indices_t ins, args_t args, std::string pathbase, hists_t *hists){
   std::stringstream path;
   path << "Data_" << pathbase << ".root";
   TFile *infile = TFile::Open(path.str().c_str());
@@ -575,8 +575,19 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
     *alpha = 3/5;
     std::cout << "Histograms loaded from Sample format." << std::endl;
   }
-  else if(args.format == Format_t::Custom){
-
+  else if(args.format == Format_t::Bbmlm){
+    loadData_bbmlm(ins, args, "data", hists);
+    if(!access("bkg_sources.list", F_OK)){
+      std::ifstream flist("bkg_sources.list");
+      std::string line;
+      while(std::getline(flist, line)){
+        loadData_bbmlm(ins, args, line, hists);
+      }
+    }
+    else loadData_bbmlm(ins, args, "bkg", hists);
+    *alpha = hists->msw_dat->Integral() / hists->msw_bkg->Integral();
+    loadsrc_csv(ins, args, hists);
+    std::cout << "Histograms loaded from bbmlm format." << std::endl;
   }
   else{
     std::cerr << "No valid data format specified." << std::endl;

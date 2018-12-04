@@ -806,7 +806,7 @@ OPTIONS:
 
   -d FORMAT, --data-format FORMAT
     Format of the imput data.
-    Available: vegas, sample.
+    Available: vegas, sample, bbmlm.
     Default: vegas.
 
   --fit-parameter
@@ -851,6 +851,9 @@ OPTIONS:
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "sample")){
         args->format = Format_t::Sample;
+      }
+      if(i < argc - 1 && !strcmp(argv[i+1], "bbmlm")){
+        args->format = Format_t::Bbmlm;
       }
     }
     if(!strcmp(argv[i], "-hist") || !strcmp(argv[i], "--histogram")){
