@@ -32,7 +32,14 @@ typedef struct Cut_Params{
   int obin;
 } Cut_Params_t;
 
-bool bin_event(Cut_Params_t *params, cuts_t *cuts, args_t *args, std::vector<SourceCut_t> &source_cuts){
+
+/*  Return value is a bit vector.
+ *  bit 0 - Passed cuts for msw
+ *  bit 1 - Passed cuts for bdt
+ *
+ *  Ex. rval = 2 -> event is suitable for bdt fit but not msw.
+ */
+int bin_event(Cut_Params_t *params, cuts_t *cuts, args_t *args, std::vector<SourceCut_t> &source_cuts){
   bool fail = false;
 
   //Source Cut
@@ -126,7 +133,28 @@ bool bin_event(Cut_Params_t *params, cuts_t *cuts, args_t *args, std::vector<Sou
   params->abin = a_bin;
   params->obin = o_bin;
 
-  return fail;
+  if(fail) return 0;
+
+  int rval = 0;
+  bool msw_fail = false;
+  bool bdt_fail = false;
+
+  //MSL Cut
+  if(params->msl > 1.3 || params->msl < 0.05) msw_fail = true;
+
+  //Shower Height Cut
+  if(params->height < 7) msw_fail = true;
+
+  //MSW Cut (No need to carry around over/underflow in hists)
+  if(params->msw < MSWLOW || params->msw > MSWHIGH) msw_fail = true;
+
+  //BDT Cut (See above)
+  if(params->bdt < BDTLOW || params->bdt > BDTHIGH) bdt_fail = true;
+
+  if(!msw_fail) rval += 1;
+  if(!bdt_fail) rval += 2;
+
+  return rval;
 }
 
 bool bin_event_cache(std::string line, indices_t *ins, cuts_t *cuts, args_t *args){
@@ -258,9 +286,6 @@ void cacheData_vegas(args_t args, std::string pathbase){
   infile << pathbase << ".list";
   std::ifstream flist(infile.str().c_str());
 
-  //Set up RA/DEC Hist
-  TH2D* ra_dec = new TH2D("RA_DEC", "RA_DEC", 360, 0, 360, 360, 0, 360);
-
   //Set up Cache file
   std::stringstream cache_path;
   cache_path << "Cache_" << pathbase << ".csv";
@@ -305,8 +330,8 @@ void cacheData_vegas(args_t args, std::string pathbase){
         VACoordinates::Rad
       );
       params->offset = tracking_coords.angularSeparation_Deg(shower_coords);
-
-      if(bin_event(params, &cuts, &args, sourcecuts)) continue;
+      //TODO
+      if(bin_event(params, &cuts, &args, sourcecuts) & 1) continue;
       ra_dec->Fill(params->eventRa, params->eventDec);
 
       cache_file << shower->fMSW << ","           //0
@@ -485,18 +510,20 @@ double loadData_custom(indices_t ins, args_t args, std::string pathbase, hists_t
     params->ntels = *ntels;
     params->azimuth = *azimuth;
     params->offset = *offset;
-    if(bin_event(params, &cuts, &args, 0)) continue;
+
+    int r = bin_event(params, &cuts, &args, 0);
+    if(r == 0) continue;
 
     cuts.passed++;
     if(pathbase == "data"){
-      if(hists->msw_dat) hists->msw_dat->Fill(*msw);
+      if(r&1 && hists->msw_dat) hists->msw_dat->Fill(*msw);
       if(hists->msw_msl_dat) hists->msw_msl_dat->Fill(*msw, *msl);
-      if(hists->bdt_dat) hists->bdt_dat->Fill(*bdt);
+      if(r&2 && hists->bdt_dat) hists->bdt_dat->Fill(*bdt);
     }
     else{
-      if(hists->msw_bkg) hists->msw_bkg->Fill(*msw);
+      if(r&1 && hists->msw_bkg) hists->msw_bkg->Fill(*msw);
       if(hists->msw_msl_bkg) hists->msw_msl_bkg->Fill(*msw, *msl);
-      if(hists->bdt_bkg) hists->bdt_bkg->Fill(*bdt);
+      if(r&2 && hists->bdt_bkg) hists->bdt_bkg->Fill(*bdt);
     }
   }
   std::cout << cuts.passed << " passed cuts." << std::endl;
