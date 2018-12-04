@@ -3,8 +3,6 @@
 
 std::string OUTSTR;
 
-std::vector<std::pair<double,double>> bkg_centers;
-
 typedef struct SourceCut
 {
   VACoordinatePair coords;
@@ -38,7 +36,7 @@ bool bin_event(Cut_Params_t *params, cuts_t *cuts, args_t *args, std::vector<Sou
   bool fail = false;
 
   //Source Cut
-  if(source_cuts.size()){
+  if(source_cuts && source_cuts.size()){
     VACoordinatePair eventCoord = VACoordinatePair(
       params->eventRa,
       params->eventDec,
@@ -413,14 +411,14 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, hists_t 
     if(bin_event_cache(line, &ins, &cuts, &args)) continue;
     cuts.passed++;
     if(pathbase == "data"){
-        if(hists->msw_dat) hists->msw_dat->Fill(fields[0]);
-        if(hists->msw_msl_dat) hists->msw_msl_dat->Fill(fields[0], fields[1]);
-        if(hists->bdt_dat) hists->bdt_dat->Fill(fields[9]);
+      if(hists->msw_dat) hists->msw_dat->Fill(fields[0]);
+      if(hists->msw_msl_dat) hists->msw_msl_dat->Fill(fields[0], fields[1]);
+      if(hists->bdt_dat) hists->bdt_dat->Fill(fields[9]);
     }
     else{
-        if(hists->msw_bkg) hists->msw_bkg->Fill(fields[0]);
-        if(hists->msw_msl_bkg) hists->msw_msl_bkg->Fill(fields[0], fields[1]);
-        if(hists->bdt_bkg) hists->bdt_bkg->Fill(fields[9]);
+      if(hists->msw_bkg) hists->msw_bkg->Fill(fields[0]);
+      if(hists->msw_msl_bkg) hists->msw_msl_bkg->Fill(fields[0], fields[1]);
+      if(hists->bdt_bkg) hists->bdt_bkg->Fill(fields[9]);
     }
   }
   std::cout << cuts.passed << " passed cuts." << std::endl;
@@ -451,6 +449,70 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, hists_t 
   return 1;
 }
 
+double loadData_custom(indices_t ins, args_t args, std::string pathbase, hists_t *hists){
+  std::stringstream path;
+  path << "Data_" <<< pathbase << ".root";
+  TFile infile(path.str().c_str());
+  if(!infile){
+    std::cerr << "Cannot open " << path.string() << std::endl;
+    return -1;
+  }
+  else{
+    std::cout << "Reading " << path.string() << std::endl;
+  }
+
+  TTreeReader reader("ntuple", infile);
+  TTreeReaderValue<double> ra(reader, "RA");
+  TTreeReaderValue<double> dec(reader, "DEC");
+  TTreeReaderValue<double> zenith(reader, "Zenith");
+  TTreeReaderValue<double> energy(reader, "Energy");
+  TTreeReaderValue<double> ntels(reader, "NTels");
+  TTreeReaderValue<double> azimuth(reader, "Azimuth");
+  TTreeReaderValue<double> offset(reader, "Offset");
+  TTreeReaderValue<double> msw(reader, "MSW");
+  TTreeReaderValue<double> msl(reader, "MSL");
+  TTreeReaderValue<double> bdt(reader, "BDT");
+
+  cuts_t cuts;
+  timestamp;
+  while(reader.Next()){
+    cuts.read++;
+    Cut_Params_t *params = new Cut_Params_t();
+    params->eventRa = *ra;
+    params->eventDec = *dec;
+    params->zenith = *zenith;
+    params->energy = *energy;
+    params->ntels = *ntels;
+    params->azimuth = *azimuth;
+    params->offset = *offset;
+    if(bin_event(params, &cuts, &args, 0)) continue;
+
+    cuts.passed++;
+    if(pathbase == "data"){
+      if(hists->msw_dat) hists->msw_dat->Fill(*msw);
+      if(hists->msw_msl_dat) hists->msw_msl_dat->Fill(*msw, *msl);
+      if(hists->bdt_dat) hists->bdt_dat->Fill(*bdt);
+    }
+    else{
+      if(hists->msw_bkg) hists->msw_bkg->Fill(*msw);
+      if(hists->msw_msl_bkg) hists->msw_msl_bkg->Fill(*msw, *msl);
+      if(hists->bdt_bkg) hists->bdt_bkg->Fill(*bdt);
+    }
+  }
+  std::cout << cuts.passed << " passed cuts." << std::endl;
+  std::cout << cuts.read << " cuts read." << std::endl;
+  std::cout << cuts.src << " failed src cut." << std::endl;
+  std::cout << cuts.tel << " failed tel cut." << std::endl;
+  std::cout << cuts.e << " failed energy cut." << std::endl;
+  std::cout << cuts.za << " failed za cut." << std::endl;
+  std::cout << cuts.az << " failed az cut." << std::endl;
+  std::cout << cuts.off << " failed off cut." << std::endl;
+
+  if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
+
+  return 1;
+}
+
 void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
   OUTSTR = hists->outpath;
   if(args.format == Format_t::Vegas){
@@ -476,6 +538,9 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
     loadData_sample(ins, args, "src", hists);
     *alpha = 3/5;
     std::cout << "Histograms loaded from Sample format." << std::endl;
+  }
+  else if(args.format == Format_t::Custom){
+
   }
   else{
     std::cerr << "No valid data format specified." << std::endl;
