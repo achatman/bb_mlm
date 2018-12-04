@@ -26,6 +26,10 @@ typedef struct Cut_Params{
   double ntels;
   double azimuth;
   double offset;
+  double msw;
+  double msl;
+  double height;
+  double bdt;
   int zbin;
   int ebin;
   int abin;
@@ -43,7 +47,7 @@ int bin_event(Cut_Params_t *params, cuts_t *cuts, args_t *args, std::vector<Sour
   bool fail = false;
 
   //Source Cut
-  if(source_cuts && source_cuts.size()){
+  if(source_cuts.size()){
     VACoordinatePair eventCoord = VACoordinatePair(
       params->eventRa,
       params->eventDec,
@@ -330,9 +334,8 @@ void cacheData_vegas(args_t args, std::string pathbase){
         VACoordinates::Rad
       );
       params->offset = tracking_coords.angularSeparation_Deg(shower_coords);
-      //TODO
+      //TODO make this use the msw/bdt separation and/or delete
       if(bin_event(params, &cuts, &args, sourcecuts) & 1) continue;
-      ra_dec->Fill(params->eventRa, params->eventDec);
 
       cache_file << shower->fMSW << ","           //0
                  << shower->fMSL << ","           //1
@@ -358,9 +361,6 @@ void cacheData_vegas(args_t args, std::string pathbase){
   std::cout << cuts.off << " failed off cut." << std::endl;
 
   if(args.output & 8) print_cuts(pathbase, &cuts, "Cache");
-  if(pathbase == "bkg"){
-    bkg_centers.push_back(std::make_pair(ra_dec->GetMean(1), ra_dec->GetMean(2)));
-  }
   cache_file.close();
 }
 
@@ -476,14 +476,14 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, hists_t 
 
 double loadData_custom(indices_t ins, args_t args, std::string pathbase, hists_t *hists){
   std::stringstream path;
-  path << "Data_" <<< pathbase << ".root";
-  TFile infile(path.str().c_str());
-  if(!infile){
-    std::cerr << "Cannot open " << path.string() << std::endl;
+  path << "Data_" << pathbase << ".root";
+  TFile *infile = TFile::Open(path.str().c_str());
+  if(!infile->IsOpen()){
+    std::cerr << "Cannot open " << path.str() << std::endl;
     return -1;
   }
   else{
-    std::cout << "Reading " << path.string() << std::endl;
+    std::cout << "Reading " << path.str() << std::endl;
   }
 
   TTreeReader reader("ntuple", infile);
@@ -497,11 +497,15 @@ double loadData_custom(indices_t ins, args_t args, std::string pathbase, hists_t
   TTreeReaderValue<double> msw(reader, "MSW");
   TTreeReaderValue<double> msl(reader, "MSL");
   TTreeReaderValue<double> bdt(reader, "BDT");
+  TTreeReaderValue<double> height(reader, "MaxHeight_KM");
 
   cuts_t cuts;
   timestamp;
   while(reader.Next()){
     cuts.read++;
+    //Could probably just pass the TTreeReaderValue
+    //Not sure if that would work with the other functions though so
+    //This is how it is for now
     Cut_Params_t *params = new Cut_Params_t();
     params->eventRa = *ra;
     params->eventDec = *dec;
@@ -510,8 +514,13 @@ double loadData_custom(indices_t ins, args_t args, std::string pathbase, hists_t
     params->ntels = *ntels;
     params->azimuth = *azimuth;
     params->offset = *offset;
+    params->msw = *msw;
+    params->msl = *msl;
+    params->bdt = *bdt;
+    params->height = *height;
 
-    int r = bin_event(params, &cuts, &args, 0);
+    vector<SourceCut_t> empty;
+    int r = bin_event(params, &cuts, &args, empty);
     if(r == 0) continue;
 
     cuts.passed++;
