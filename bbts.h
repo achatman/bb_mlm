@@ -62,7 +62,6 @@ struct args_t {
   verbosity(-1),
   bin_vars(7),
   graphics(0),
-  bidir(0),
   cache(1),
   fit_params(1) {}
   Format_t format;
@@ -71,7 +70,6 @@ struct args_t {
   int verbosity;
   int bin_vars;
   int graphics;
-  bool bidir;
   bool cache;
   int fit_params;
   std::string op_info;
