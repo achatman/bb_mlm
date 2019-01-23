@@ -364,52 +364,6 @@ void cacheData_vegas(args_t args, std::string pathbase){
   cache_file.close();
 }
 
-void loadData_sample(indices_t ins, args_t args, std::string pathbase, hists_t* hists){
-  /*Load sample data that is easily and quickly repeatable for testing purposes.
-   * Data hist is filled from the function 5x with ~1000 counts.
-   * Bkg hist is filled from the function 5x with ~3000 counts.
-   * Src hist is filled from a Gaussian with ~30000 counts.
-   */
-
-  if(pathbase == "data"){
-    for(int i = 1; i <= NBIN; i++){
-      double dat = 5*i + 1000/NBIN + gRandom->Gaus(0, 10);
-      hists->msw_dat->SetBinContent(i, dat);
-    }
-  }
-  if(pathbase == "bkg"){
-    for(int i = 1; i <= NBIN; i++){
-      double bkg = 5*i + 3000/NBIN + gRandom->Gaus(0, 10);
-      hists->msw_bkg->SetBinContent(i, bkg);
-    }
-  }
-  if(pathbase == "src"){
-    for(int i = 0; i < 30000; i++){
-      hists->msw_src->Fill(gRandom->Gaus(1, .1));
-    }
-  }
-  if(hists->msw_msl_dat && pathbase == "data"){
-    for(int i = 1; i <= NBIN; i++){
-      double nEvents = hists->msw_dat->GetBinContent(i);
-      for(int j = 0; j < nEvents; j++){
-        double x = gRandom->Uniform(hists->msw_dat->GetBinCenter(i) - .5*hists->msw_dat->GetBinWidth(i), hists->msw_dat->GetBinCenter(i) + .5*hists->msw_dat->GetBinWidth(i));
-        double y = gRandom->Gaus(1, .15);
-        hists->msw_msl_dat->Fill(x,y);
-      }
-    }
-  }
-  if(hists->msw_msl_bkg && pathbase == "bkg"){
-    for(int i = 1; i <= NBIN; i++){
-      double nEvents = hists->msw_bkg->GetBinContent(i);
-        for(int j = 0; j < nEvents; j++){
-          double x = gRandom->Uniform(hists->msw_bkg->GetBinCenter(i) - .5*hists->msw_bkg->GetBinWidth(i), hists->msw_bkg->GetBinCenter(i) + .5*hists->msw_bkg->GetBinWidth(i));
-          double y = gRandom->Gaus(1, .15);
-          hists->msw_msl_bkg->Fill(x,y);
-      }
-    }
-  }
-}
-
 double loadData_vegas(indices_t ins, args_t args, std::string pathbase, hists_t *hists){
   std::stringstream cache_path;
   cache_path << "Cache_" << pathbase << ".csv";
@@ -566,12 +520,6 @@ void loadData(indices_t ins, args_t args, hists_t *hists){
     }
     loadsrc_csv(ins, args, hists);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
-  }
-  else if(args.format == Format_t::Sample){
-    loadData_sample(ins, args, "data", hists);
-    loadData_sample(ins, args, "bkg", hists);
-    loadData_sample(ins, args, "src", hists);
-    std::cout << "Histograms loaded from Sample format." << std::endl;
   }
   else if(args.format == Format_t::Bbmlm){
     loadData_bbmlm(ins, args, "data", hists);

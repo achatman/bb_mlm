@@ -54,7 +54,7 @@ extern int TBINS[];
 extern double AZBINS[];
 extern double OBINS[];
 
-enum class Format_t{Vegas, Sample, Bbmlm};
+enum class Format_t{Vegas, Bbmlm};
 struct args_t {
   args_t() : format(Format_t::Vegas),
   hist(0),

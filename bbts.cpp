@@ -24,6 +24,16 @@ int parse_command_line(int argc, char* argv[], args_t* args);
 void prepare_std_output_files(args_t args);
 int optional_binning(indices_t indices, args_t args);
 
+/**
+  Calculates the negative log likelihood
+  for the case with only a background
+  component and barlow-beeston turned off.
+
+  @param Pb Unweighted background fraction.
+  @param print Outputs stats to an output file.
+  @param F If present, F will hold the f_i histogram.
+  @return Negative log likelihood.
+*/
 double nosrc_noBB(double Pb, bool print, TH1D* F){
   int i;
   double pb;
@@ -83,6 +93,17 @@ double nosrc_noBB(double Pb, bool print, TH1D* F){
   return -lnL;
 }
 
+/**
+  Calculates the negative log likelihood
+  for the case with both background and source
+  components and barlow-beeston turned off.
+
+  @param Pb Unweighted background fraction.
+  @param Ps Unweighted source fraction.
+  @param print Outputs stats to an output file.
+  @param F If present, F will hold the f_i histogram.
+  @return Negative log likelihood.
+*/
 double src_noBB(double Pb, double Ps, bool print, TH1D* F){
   int i;
   double pb, ps;
@@ -150,6 +171,17 @@ double src_noBB(double Pb, double Ps, bool print, TH1D* F){
   return -lnL;
 }
 
+/**
+  Calculates the negative log likelihood
+  for the case with only a background
+  component and barlow-beeston turned on.
+
+  @param Pb Unweighted background fraction.
+  @param print Outputs stats to an output file.
+  @param F If present, F will hold the f_i histogram.
+  @param B If present, B will hold the a_i histogram for background.
+  @return Negative log likelihood.
+*/
 double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
   int i;
   double pb;
@@ -232,6 +264,19 @@ double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
   return -lnL;
 }
 
+/**
+  Calculates the negative log likelihood
+  for the case with both background and
+  source components with barlow-beeston
+  turned on.
+
+  @param Pb Unweighted background fraction.
+  @param Ps Unweighted source fraction.
+  @param print Outputs stats to an output file.
+  @param F If present, F will hold the f_i histogram.
+  @param B If present, B will hold the a_i histogram for background.
+  @return Negative log likelihood.
+*/
 double src_BB(double Pb, double Ps, bool print, TH1D* F, TH1D* B){
   int i;
   double pb, ps;
@@ -336,6 +381,22 @@ void wrapper_nosrc_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t pa
 
 void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1]); }
 
+/**
+  Runs fits with and without source components
+  and barlow-beeston turned on and off for a
+  total of four fits. The fit results are then
+  output to disk.
+
+  @param ins Indices struct holding the current
+  bin indices for each binned variable in the fit.
+  @param args Arguments struct holding the
+  command line arguments.
+  @param fracs Array used to hold various fractions
+  to be output.
+  @param fit_param Which parameter is being fit on.
+  Should have the value "MSW" or "BDT".
+  @param hists I honestly don't know TODO
+*/
 void fit(indices_t ins, args_t args, double *fracs, std::string fit_param, hists_t *hists=0){
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
@@ -457,6 +518,16 @@ void fit(indices_t ins, args_t args, double *fracs, std::string fit_param, hists
 
 }
 
+/**
+  Loops over the binned variables and
+  first loads data then runs the fit
+  for each bin combination and each fit
+  parameter.
+
+
+
+
+*/
 int main(int argc, char* argv[]){
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return 1;
@@ -552,7 +623,7 @@ OPTIONS:
 
   -d FORMAT, --data-format FORMAT
     Format of the imput data.
-    Available: vegas, sample, bbmlm.
+    Available: vegas, bbmlm.
     Default: vegas.
 
   --fit-parameter
@@ -594,9 +665,6 @@ OPTIONS:
     if(!strcmp(argv[i], "-d") || !strcmp(argv[i], "--data-format")){
       if(i < argc - 1 && !strcmp(argv[i+1], "vegas")){
         args->format = Format_t::Vegas;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "sample")){
-        args->format = Format_t::Sample;
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "bbmlm")){
         args->format = Format_t::Bbmlm;
