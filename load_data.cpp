@@ -549,7 +549,7 @@ double loadData_bbmlm(indices_t ins, args_t args, std::string pathbase, hists_t 
   return 1;
 }
 
-void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
+void loadData(indices_t ins, args_t args, hists_t *hists){
   OUTSTR = hists->outpath;
   if(args.format == Format_t::Vegas){
     loadData_vegas(ins, args, "data", hists);
@@ -564,7 +564,6 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
     else{
       loadData_vegas(ins, args, "bkg", hists);
     }
-    *alpha = hists->msw_dat->Integral() / hists->msw_bkg->Integral(); //TODO
     loadsrc_csv(ins, args, hists);
     std::cout << "Histograms loaded from Vegas format." << std::endl;
   }
@@ -572,7 +571,6 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
     loadData_sample(ins, args, "data", hists);
     loadData_sample(ins, args, "bkg", hists);
     loadData_sample(ins, args, "src", hists);
-    *alpha = 3/5;
     std::cout << "Histograms loaded from Sample format." << std::endl;
   }
   else if(args.format == Format_t::Bbmlm){
@@ -585,7 +583,6 @@ void loadData(indices_t ins, args_t args, double *alpha, hists_t *hists){
       }
     }
     else loadData_bbmlm(ins, args, "bkg", hists);
-    *alpha = hists->msw_dat->Integral() / hists->msw_bkg->Integral();
     loadsrc_csv(ins, args, hists);
     std::cout << "Histograms loaded from bbmlm format." << std::endl;
   }

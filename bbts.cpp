@@ -24,22 +24,6 @@ int parse_command_line(int argc, char* argv[], args_t* args);
 void prepare_std_output_files(args_t args);
 int optional_binning(indices_t indices, args_t args);
 
-//Li Ma Significance Calculation
-//Eq 17, Li Ma (1983)
-double lima_sig(double Pb, double Ps){
-  double alpha = DAT_HIST->Integral() / BKG_HIST->Integral();
-  double pb = Pb * DAT_HIST->Integral() / BKG_HIST->Integral();
-  double ps = Ps * DAT_HIST->Integral() / SRC_HIST->Integral();
-  double N_on = ps * SRC_HIST->Integral();
-  double N_off = pb * BKG_HIST->Integral();
-  double S = TMath::Sqrt(2)
-           * TMath::Sqrt(
-              N_on * TMath::Log( ((1 + alpha) / alpha) * (N_on / (N_on + N_off)) )
-            + N_off * TMath::Log( (1 + alpha) * (N_off / (N_on + N_off)) )
-            );
-  return S;
-}
-
 double nosrc_noBB(double Pb, bool print, TH1D* F){
   int i;
   double pb;
@@ -352,7 +336,7 @@ void wrapper_nosrc_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t pa
 
 void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1]); }
 
-void fit(indices_t ins, args_t args, double alpha, double *fracs, std::string fit_param, hists_t *hists=0){
+void fit(indices_t ins, args_t args, double *fracs, std::string fit_param, hists_t *hists=0){
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
   TFitter* fit_src_nobb   = new TFitter(2);
@@ -395,8 +379,6 @@ void fit(indices_t ins, args_t args, double alpha, double *fracs, std::string fi
   double lnL_src_bb = -src_BB(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), output_bins);
   double TS_nobb = 2 * (lnL_src_nobb - lnL_nosrc_nobb);
   double TS_bb = 2 * (lnL_src_bb - lnL_nosrc_bb);
-  double lima_nobb = lima_sig(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1));
-  double lima_bb = lima_sig(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1));
 
   std::stringstream std_output, bb_output, summary;
   std_output << "fitstats_" << fit_param << "_std.csv";
@@ -505,8 +487,7 @@ int main(int argc, char* argv[]){
             }
             hists->outpath = OUTPATH;
             hists->longoutpath = LONGOUTPATH;
-            double alpha = 1;
-            loadData(indices, *args, &alpha, hists);
+            loadData(indices, *args, hists);
             if(!hists->msw_dat && !hists->bdt_dat) throw 407;
             if(!hists->msw_bkg && !hists->bdt_bkg) throw 408;
             if(!hists->msw_src && !hists->bdt_src) throw 409;
@@ -527,7 +508,7 @@ int main(int argc, char* argv[]){
               OUTPATH = "MSW" + hists->outpath;
               LONGOUTPATH = "MSW" + hists->longoutpath;
               double fracs[6];
-              fit(indices, *args, alpha, fracs, "MSW", hists);
+              fit(indices, *args, fracs, "MSW", hists);
             }
 
             //BDT Fit
@@ -538,7 +519,7 @@ int main(int argc, char* argv[]){
               OUTPATH = "BDT" + hists->outpath;
               LONGOUTPATH = "BDT" + hists->longoutpath;
               double fracs[6];
-              fit(indices, *args, alpha, fracs, "BDT", hists);
+              fit(indices, *args, fracs, "BDT", hists);
             }
 
             //Clean up hists
