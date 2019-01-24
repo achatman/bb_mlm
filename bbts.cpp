@@ -65,7 +65,7 @@ double nosrc_noBB(double Pb, TH1D* F){
   @param F If present, F will hold the f_i histogram.
   @return Negative log likelihood.
 */
-double src_noBB(double Pb, double Ps, bool print, TH1D* F){
+double src_noBB(double Pb, double Ps, TH1D* F){
   int i;
   double pb, ps;
   double di, bi, si, fi;
@@ -158,7 +158,7 @@ double nosrc_BB(double Pb, TH1D* F, TH1D* B){
   @param B If present, B will hold the a_i histogram for background.
   @return Negative log likelihood.
 */
-double src_BB(double Pb, double Ps, bool print, TH1D* F, TH1D* B){
+double src_BB(double Pb, double Ps, TH1D* F, TH1D* B){
   int i;
   double pb, ps;
   double di, bi, si, Bi, fi;
