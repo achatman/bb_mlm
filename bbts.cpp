@@ -8,7 +8,7 @@ std::string LONGOUTPATH;
 TH1D* DAT_HIST;
 TH1D* BKG_HIST;
 TH1D* SRC_HIST;
-TH2D* DAT_2HIST;
+TH2D* DAT_2HIST; //TODO remove
 TH2D* BKG_2HIST;
 
 //Bin boundaries
@@ -395,9 +395,9 @@ void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[
   to be output.
   @param fit_param Which parameter is being fit on.
   Should have the value "MSW" or "BDT".
-  @param hists I honestly don't know TODO
+  @param hists Struct holding input histograms
 */
-void fit(indices_t ins, args_t args, double *fracs, std::string fit_param, hists_t *hists=0){
+void fit(indices_t ins, args_t *args, std::string fit_param, hists_t *hists){
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
   TFitter* fit_src_nobb   = new TFitter(2);
@@ -432,6 +432,15 @@ void fit(indices_t ins, args_t args, double *fracs, std::string fit_param, hists
   fit_nosrc_bb  ->ExecuteCommand("MINOS", 0, 0);
   fit_src_bb    ->ExecuteCommand("MINOS", 0, 0);
 
+  double fracs[4];
+  fracs[0] = fit_src_nobb->GetParameter(0);
+  fracs[1] = fit_src_nobb->GetParameter(1);
+  fracs[2] = fit_src_bb->GetParameter(0);
+  fracs[3] = fit_src_bb->GetParameter(1);
+  write_to_root_file(args, hists, fracs, fit_param, 0);
+  //TODO SRCEXCL
+
+  /*
   //Get likelihood and TS
   bool output_bins = (args.output & 1) && (DAT_HIST->Integral() + BKG_HIST->Integral());
   double lnL_nosrc_nobb = -nosrc_noBB(fit_nosrc_nobb->GetParameter(0), output_bins);
@@ -515,7 +524,7 @@ void fit(indices_t ins, args_t args, double *fracs, std::string fit_param, hists
   if(args.output & 4) print_errors(fit_src_bb, fit_param, OUTPATH);
   if(args.graphics & 1) map_likelihood(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1), "Std", ins, args, OUTPATH, LONGOUTPATH);
   if(args.graphics & 2) map_likelihood(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), "BB", ins, args, OUTPATH, LONGOUTPATH);
-
+  */
 }
 
 /**
@@ -531,7 +540,8 @@ void fit(indices_t ins, args_t args, double *fracs, std::string fit_param, hists
 int main(int argc, char* argv[]){
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return 1;
-  prepare_std_output_files(*args);
+  //prepare_std_output_files(*args); //TODO remove
+  init_output_root_file();
   indices_t indices;
   for(indices.za = 0; indices.za < 6; indices.za++){
     for(indices.e = 0; indices.e < 4; indices.e++){
@@ -578,8 +588,7 @@ int main(int argc, char* argv[]){
               SRC_HIST = hists->msw_src;
               OUTPATH = "MSW" + hists->outpath;
               LONGOUTPATH = "MSW" + hists->longoutpath;
-              double fracs[6];
-              fit(indices, *args, fracs, "MSW", hists);
+              fit(indices, args, "MSW", hists);
             }
 
             //BDT Fit
@@ -589,8 +598,7 @@ int main(int argc, char* argv[]){
               SRC_HIST = hists->bdt_src;
               OUTPATH = "BDT" + hists->outpath;
               LONGOUTPATH = "BDT" + hists->longoutpath;
-              double fracs[6];
-              fit(indices, *args, fracs, "BDT", hists);
+              fit(indices, args, "BDT", hists);
             }
 
             //Clean up hists
