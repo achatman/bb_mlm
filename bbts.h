@@ -40,7 +40,7 @@
   Long_t __timestamp = std::time(0);                        \
   std::cout << std::asctime(std::localtime(&__timestamp));  \
 }
-#define PRINTSPACE std::left << std::setw(PW)
+
 #define MSWLOW 0.7875
 #define MSWHIGH 1.3125
 #define BDTLOW 0.589
@@ -57,22 +57,13 @@ extern double OBINS[];
 enum class Format_t{Vegas, Bbmlm};
 struct args_t {
   args_t() : format(Format_t::Vegas),
-  hist(0),
-  output(0),
   verbosity(-1),
   bin_vars(7),
-  graphics(0),
-  cache(1),
   fit_params(1) {}
   Format_t format;
-  int hist;
-  int output;
   int verbosity;
   int bin_vars;
-  int graphics;
-  bool cache;
   int fit_params;
-  std::string op_info;
 };
 struct indices_t{
   int za;
@@ -101,15 +92,13 @@ struct hists_t{
   TH1D* bdt_dat;
   TH1D* bdt_bkg;
   TH1D* bdt_src;
-  TH2D* msw_msl_dat; //TODO remove these
-  TH2D* msw_msl_bkg;
   std::string outpath;
   std::string longoutpath;
 };
 
-double nosrc_noBB(double Pb, bool print = false, TH1D* F = 0);
-double src_noBB(double Pb, double Ps, bool print = false, TH1D* F = 0);
-double nosrc_BB(double Pb, bool print = false, TH1D* F = 0, TH1D* B = 0);
-double src_BB(double Pb, double Ps, bool print = false, TH1D* F = 0, TH1D* B = 0);
+double nosrc_noBB(double Pb, TH1D* F = 0);
+double src_noBB(double Pb, double Ps, TH1D* F = 0);
+double nosrc_BB(double Pb, TH1D* F = 0, TH1D* B = 0);
+double src_BB(double Pb, double Ps, TH1D* F = 0, TH1D* B = 0);
 
 #endif

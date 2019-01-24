@@ -360,7 +360,6 @@ void cacheData_vegas(args_t args, std::string pathbase){
   std::cout << cuts.az << " failed az cut." << std::endl;
   std::cout << cuts.off << " failed off cut." << std::endl;
 
-  if(args.output & 8) print_cuts(pathbase, &cuts, "Cache");
   cache_file.close();
 }
 
@@ -391,12 +390,10 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, hists_t 
     cuts.passed++;
     if(pathbase == "data"){
       if(hists->msw_dat) hists->msw_dat->Fill(fields[0]);
-      if(hists->msw_msl_dat) hists->msw_msl_dat->Fill(fields[0], fields[1]);
       if(hists->bdt_dat) hists->bdt_dat->Fill(fields[9]);
     }
     else{
       if(hists->msw_bkg) hists->msw_bkg->Fill(fields[0]);
-      if(hists->msw_msl_bkg) hists->msw_msl_bkg->Fill(fields[0], fields[1]);
       if(hists->bdt_bkg) hists->bdt_bkg->Fill(fields[9]);
     }
   }
@@ -409,7 +406,6 @@ double loadData_vegas(indices_t ins, args_t args, std::string pathbase, hists_t 
   std::cout << cuts.az << " failed az cut." << std::endl;
   std::cout << cuts.off << " failed off cut." << std::endl;
 
-  if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
 
   //Remove underflow and overflow
   if(pathbase == "data"){
@@ -480,12 +476,10 @@ double loadData_bbmlm(indices_t ins, args_t args, std::string pathbase, hists_t 
     cuts.passed++;
     if(pathbase == "data"){
       if(r&1 && hists->msw_dat) hists->msw_dat->Fill(*msw);
-      if(hists->msw_msl_dat) hists->msw_msl_dat->Fill(*msw, *msl);
       if(r&2 && hists->bdt_dat) hists->bdt_dat->Fill(*bdt);
     }
     else{
       if(r&1 && hists->msw_bkg) hists->msw_bkg->Fill(*msw);
-      if(hists->msw_msl_bkg) hists->msw_msl_bkg->Fill(*msw, *msl);
       if(r&2 && hists->bdt_bkg) hists->bdt_bkg->Fill(*bdt);
     }
   }
@@ -498,7 +492,6 @@ double loadData_bbmlm(indices_t ins, args_t args, std::string pathbase, hists_t 
   std::cout << cuts.az << " failed az cut." << std::endl;
   std::cout << cuts.off << " failed off cut." << std::endl;
 
-  if(args.output & 8) print_cuts(pathbase, &cuts, OUTSTR);
 
   return 1;
 }

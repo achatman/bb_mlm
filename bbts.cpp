@@ -8,8 +8,6 @@ std::string LONGOUTPATH;
 TH1D* DAT_HIST;
 TH1D* BKG_HIST;
 TH1D* SRC_HIST;
-TH2D* DAT_2HIST; //TODO remove
-TH2D* BKG_2HIST;
 
 //Bin boundaries
 double ZABINS[] = {0.00,14.1,25.46,32.59,37.57,42.56,47.55};
@@ -30,11 +28,10 @@ int optional_binning(indices_t indices, args_t args);
   component and barlow-beeston turned off.
 
   @param Pb Unweighted background fraction.
-  @param print Outputs stats to an output file.
   @param F If present, F will hold the f_i histogram.
   @return Negative log likelihood.
 */
-double nosrc_noBB(double Pb, bool print, TH1D* F){
+double nosrc_noBB(double Pb, TH1D* F){
   int i;
   double pb;
   double di, bi, fi;
@@ -42,28 +39,6 @@ double nosrc_noBB(double Pb, bool print, TH1D* F){
   std::ofstream f;
   double lnL = 0;
   pb = Pb * DAT_HIST->Integral() / BKG_HIST->Integral();
-  if(print){
-    std::stringstream path;
-    path << "Bin_NoSrc_Std_" << OUTPATH << ".txt";
-    f.open(path.str());
-    f.precision(5);
-    f << "Bin: " << LONGOUTPATH << std::endl;
-    f << std::scientific;
-    f << "bkgfrac    " << Pb << std::endl;
-    f << "srcfrac    -----" << std::endl;
-    f << PRINTSPACE << "Counts:";
-    f << PRINTSPACE << "Data";
-    f << PRINTSPACE << "Bkg";
-    f << std::endl << std::defaultfloat;
-    f << PRINTSPACE << "";
-    f << PRINTSPACE << DAT_HIST->Integral();
-    f << PRINTSPACE << BKG_HIST->Integral();
-    f << std::endl << std::endl;
-    f << PRINTSPACE << "i";
-    f << PRINTSPACE << "di";
-    f << PRINTSPACE << "fi";
-    f << PRINTSPACE << "bi" << std::endl;
-  }
   for(i = 1; i <= NBIN; i++){
     di = DAT_HIST->GetBinContent(i);
     bi = BKG_HIST->GetBinContent(i);
@@ -71,24 +46,11 @@ double nosrc_noBB(double Pb, bool print, TH1D* F){
     if(di == 0) lnL -= fi;
     else        lnL += di * TMath::Log(fi) - fi;
     dtot += di; btot += bi; ftot += fi;
-    if(print){
-      f << PRINTSPACE << i;
-      f << PRINTSPACE << di;
-      f << PRINTSPACE << fi;
-      f << PRINTSPACE << bi << std::endl;
-    }
     if(F){
       F->Sumw2(false);
       F->SetBinContent(i, fi);
       F->Sumw2(true);
     }
-  }
-  if(print){
-    f << PRINTSPACE << "Sum";
-    f << PRINTSPACE << dtot;
-    f << PRINTSPACE << ftot;
-    f << PRINTSPACE << btot << std::endl;
-    f.close();
   }
   return -lnL;
 }
@@ -100,7 +62,6 @@ double nosrc_noBB(double Pb, bool print, TH1D* F){
 
   @param Pb Unweighted background fraction.
   @param Ps Unweighted source fraction.
-  @param print Outputs stats to an output file.
   @param F If present, F will hold the f_i histogram.
   @return Negative log likelihood.
 */
@@ -113,31 +74,6 @@ double src_noBB(double Pb, double Ps, bool print, TH1D* F){
   double lnL = 0;
   pb = Pb * DAT_HIST->Integral() / BKG_HIST->Integral();
   ps = Ps * DAT_HIST->Integral() / SRC_HIST->Integral();
-  if(print){
-    std::stringstream path;
-    path << "Bin_Src_Std_" << OUTPATH << ".txt";
-    f.open(path.str());
-    f.precision(5);
-    f << "Bin: " << LONGOUTPATH << std::endl;
-    f << std::scientific;
-    f << "bkgfrac    " << Pb << std::endl;
-    f << "srcfrac    " << Ps << std::endl;
-    f << PRINTSPACE << "Counts:";
-    f << PRINTSPACE << "Data";
-    f << PRINTSPACE << "Bkg";
-    f << PRINTSPACE << "Src";
-    f << std::endl << std::defaultfloat;
-    f << PRINTSPACE << "";
-    f << PRINTSPACE << DAT_HIST->Integral();
-    f << PRINTSPACE << BKG_HIST->Integral();
-    f << PRINTSPACE << SRC_HIST->Integral();
-    f << std::endl << std::endl;
-    f << PRINTSPACE << "i";
-    f << PRINTSPACE << "di";
-    f << PRINTSPACE << "fi";
-    f << PRINTSPACE << "bi";
-    f << PRINTSPACE << "si" << std::endl;
-  }
   for(i = 1; i <= NBIN; i++){
     di = DAT_HIST->GetBinContent(i);
     bi = BKG_HIST->GetBinContent(i);
@@ -147,26 +83,11 @@ double src_noBB(double Pb, double Ps, bool print, TH1D* F){
     else        lnL += di * TMath::Log(fi) - fi;
 
     dtot += di; btot += bi; ftot += fi; stot += si;
-    if(print){
-      f << PRINTSPACE << i;
-      f << PRINTSPACE << di;
-      f << PRINTSPACE << fi;
-      f << PRINTSPACE << bi;
-      f << PRINTSPACE << si << std::endl;
-    }
     if(F){
       F->Sumw2(false);
       F->SetBinContent(i, fi);
       F->Sumw2(true);
     }
-  }
-  if(print){
-    f << PRINTSPACE << "Sum";
-    f << PRINTSPACE << dtot;
-    f << PRINTSPACE << ftot;
-    f << PRINTSPACE << btot;
-    f << PRINTSPACE << stot << std::endl;
-    f.close();
   }
   return -lnL;
 }
@@ -177,12 +98,11 @@ double src_noBB(double Pb, double Ps, bool print, TH1D* F){
   component and barlow-beeston turned on.
 
   @param Pb Unweighted background fraction.
-  @param print Outputs stats to an output file.
   @param F If present, F will hold the f_i histogram.
   @param B If present, B will hold the a_i histogram for background.
   @return Negative log likelihood.
 */
-double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
+double nosrc_BB(double Pb, TH1D* F, TH1D* B){
   int i;
   double pb;
   double di, bi, Bi, fi;
@@ -191,29 +111,6 @@ double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
   std::ofstream f;
   double lnL = 0;
   pb = Pb * DAT_HIST->Integral() / BKG_HIST->Integral();
-  if(print){
-    std::stringstream path;
-    path << "Bin_NoSrc_BB_" << OUTPATH << ".txt";
-    f.open(path.str());
-    f.precision(5);
-    f << "Bin: " << LONGOUTPATH << std::endl;
-    f << std::scientific;
-    f << "bkgfrac    " << Pb << std::endl;
-    f << "srcfrac    -----" << std::endl;
-    f << PRINTSPACE << "Counts:";
-    f << PRINTSPACE << "Data";
-    f << PRINTSPACE << "Bkg";
-    f << std::endl << std::defaultfloat;
-    f << PRINTSPACE << "";
-    f << PRINTSPACE << DAT_HIST->Integral();
-    f << PRINTSPACE << BKG_HIST->Integral();
-    f << std::endl << std::endl;
-    f << PRINTSPACE << "i";
-    f << PRINTSPACE << "di";
-    f << PRINTSPACE << "fi";
-    f << PRINTSPACE << "bi";
-    f << PRINTSPACE << "Bi" << std::endl;
-  }
   for(i = 1; i <= NBIN; i++){
     di = DAT_HIST->GetBinContent(i);
     bi = BKG_HIST->GetBinContent(i);
@@ -235,13 +132,6 @@ double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
     else        lnL += bi * TMath::Log(Bi) - Bi;
 
     dtot += di; btot += bi; ftot += fi; Btot += Bi;
-    if(print){
-      f << PRINTSPACE << i;
-      f << PRINTSPACE << di;
-      f << PRINTSPACE << fi;
-      f << PRINTSPACE << bi;
-      f << PRINTSPACE << Bi << std::endl;
-    }
     if(F){
       F->Sumw2(false);
       F->SetBinContent(i, fi);
@@ -252,14 +142,6 @@ double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
       B->SetBinContent(i, Bi);
       B->Sumw2(true);
     }
-  }
-  if(print){
-    f << PRINTSPACE << "Sum";
-    f << PRINTSPACE << dtot;
-    f << PRINTSPACE << ftot;
-    f << PRINTSPACE << btot;
-    f << PRINTSPACE << Btot << std::endl;
-    f.close();
   }
   return -lnL;
 }
@@ -272,7 +154,6 @@ double nosrc_BB(double Pb, bool print, TH1D* F, TH1D* B){
 
   @param Pb Unweighted background fraction.
   @param Ps Unweighted source fraction.
-  @param print Outputs stats to an output file.
   @param F If present, F will hold the f_i histogram.
   @param B If present, B will hold the a_i histogram for background.
   @return Negative log likelihood.
@@ -287,32 +168,6 @@ double src_BB(double Pb, double Ps, bool print, TH1D* F, TH1D* B){
   double lnL = 0;
   pb = Pb * DAT_HIST->Integral() / BKG_HIST->Integral();
   ps = Ps * DAT_HIST->Integral() / SRC_HIST->Integral();
-  if(print){
-    std::stringstream path;
-    path << "Bin_Src_BB_" << OUTPATH << ".txt";
-    f.open(path.str());
-    f.precision(5);
-    f << "Bin: " << LONGOUTPATH << std::endl;
-    f << std::scientific;
-    f << "bkgfrac    " << Pb << std::endl;
-    f << "srcfrac    " << Ps << std::endl;
-    f << PRINTSPACE << "Counts:";
-    f << PRINTSPACE << "Data";
-    f << PRINTSPACE << "Bkg";
-    f << PRINTSPACE << "Src";
-    f << std::endl << std::defaultfloat;
-    f << PRINTSPACE << "";
-    f << PRINTSPACE << DAT_HIST->Integral();
-    f << PRINTSPACE << BKG_HIST->Integral();
-    f << PRINTSPACE << SRC_HIST->Integral();
-    f << std::endl << std::endl;
-    f << PRINTSPACE << "i";
-    f << PRINTSPACE << "di";
-    f << PRINTSPACE << "fi";
-    f << PRINTSPACE << "bi";
-    f << PRINTSPACE << "Bi";
-    f << PRINTSPACE << "si" << std::endl;
-  }
   for(i = 1; i <= NBIN; i++){
     di = DAT_HIST->GetBinContent(i);
     bi = BKG_HIST->GetBinContent(i);
@@ -342,14 +197,6 @@ double src_BB(double Pb, double Ps, bool print, TH1D* F, TH1D* B){
     else        lnL += bi * TMath::Log(Bi) - Bi;
 
     dtot += di; btot += bi; ftot += fi; stot += si; Btot += Bi;
-    if(print){
-      f << PRINTSPACE << i;
-      f << PRINTSPACE << di;
-      f << PRINTSPACE << fi;
-      f << PRINTSPACE << bi;
-      f << PRINTSPACE << Bi;
-      f << PRINTSPACE << si << std::endl;
-    }
     if(F){
       F->Sumw2(false);
       F->SetBinContent(i, fi);
@@ -361,25 +208,16 @@ double src_BB(double Pb, double Ps, bool print, TH1D* F, TH1D* B){
       B->Sumw2(true);
     }
   }
-  if(print){
-    f << PRINTSPACE << "Sum";
-    f << PRINTSPACE << dtot;
-    f << PRINTSPACE << ftot;
-    f << PRINTSPACE << btot;
-    f << PRINTSPACE << Btot;
-    f << PRINTSPACE << stot << std::endl;
-    f.close();
-  }
   return -lnL;
 }
 
 void wrapper_nosrc_noBB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = nosrc_noBB(par[0]); }
 
-void wrapper_src_noBB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_noBB(par[0],par[1]); }
+void wrapper_src_noBB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_noBB(par[0], par[1], 0); }
 
 void wrapper_nosrc_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = nosrc_BB(par[0]); }
 
-void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1]); }
+void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[], Int_t flag){ result = src_BB(par[0], par[1], 0); }
 
 /**
   Runs fits with and without source components
@@ -439,92 +277,6 @@ void fit(indices_t ins, args_t *args, std::string fit_param, hists_t *hists){
   fracs[3] = fit_src_bb->GetParameter(1);
   write_to_root_file(args, hists, fracs, fit_param, 0);
   //TODO SRCEXCL
-
-  /*
-  //Get likelihood and TS
-  bool output_bins = (args.output & 1) && (DAT_HIST->Integral() + BKG_HIST->Integral());
-  double lnL_nosrc_nobb = -nosrc_noBB(fit_nosrc_nobb->GetParameter(0), output_bins);
-  double lnL_src_nobb = -src_noBB(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1), output_bins);
-  double lnL_nosrc_bb = -nosrc_BB(fit_nosrc_bb->GetParameter(0), output_bins);
-  double lnL_src_bb = -src_BB(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), output_bins);
-  double TS_nobb = 2 * (lnL_src_nobb - lnL_nosrc_nobb);
-  double TS_bb = 2 * (lnL_src_bb - lnL_nosrc_bb);
-
-  std::stringstream std_output, bb_output, summary;
-  std_output << "fitstats_" << fit_param << "_std.csv";
-  bb_output << "fitstats_" << fit_param << "_bb.csv";
-  summary << "summary_" << fit_param << ".csv";
-  std::ofstream f(std_output.str(), std::ios::out | std::ios::app);
-  if(args.bin_vars & 1) f << ins.za << ",";
-  if(args.bin_vars & 2) f << ins.e << ",";
-  if(args.bin_vars & 4) f << ins.tel << ",";
-  if(args.bin_vars & 8) f << ins.az << ",";
-  if(args.bin_vars & 16) f << ins.off << ",";
-  f << std::scientific
-    << fit_nosrc_nobb->GetParameter(0) << ","
-    << fit_src_nobb->GetParameter(0) << ","
-    << fit_src_nobb->GetParameter(1) << ","
-    << std::defaultfloat
-    << DAT_HIST->Integral() << ","
-    << BKG_HIST->Integral() << ","
-    << SRC_HIST->Integral() << ","
-    << lnL_nosrc_nobb << ","
-    << lnL_src_nobb << ","
-    << TS_nobb << std::endl;
-  f.close();
-
-  f.open(bb_output.str(), std::ios::out | std::ios::app);
-  if(args.bin_vars & 1) f << ins.za << ",";
-  if(args.bin_vars & 2) f << ins.e << ",";
-  if(args.bin_vars & 4) f << ins.tel << ",";
-  if(args.bin_vars & 8) f << ins.az << ",";
-  if(args.bin_vars & 16) f << ins.off << ",";
-  f << std::scientific
-    << fit_nosrc_bb->GetParameter(0) << ","
-    << fit_src_bb->GetParameter(0) << ","
-    << fit_src_bb->GetParameter(1) << ","
-    << std::defaultfloat
-    << DAT_HIST->Integral() << ","
-    << BKG_HIST->Integral() << ","
-    << SRC_HIST->Integral() << ","
-    << lnL_nosrc_bb << ","
-    << lnL_src_bb << ","
-    << TS_bb << std::endl;
-  f.close();
-
-  double signal = DAT_HIST->Integral() * fit_src_bb->GetParameter(1);
-  f.open(summary.str(), std::ios::out | std::ios::app);
-  if(args.bin_vars & 1) f << ins.za << ",";
-  if(args.bin_vars & 2) f << ins.e << ",";
-  if(args.bin_vars & 4) f << ins.tel << ",";
-  if(args.bin_vars & 8) f << ins.az << ",";
-  if(args.bin_vars & 16) f << ins.off << ",";
-  f << std::scientific
-    << fit_src_bb->GetParameter(0) << ","
-    << fit_src_bb->GetParError(0) << ","
-    << fit_src_bb->GetParameter(1) << ","
-    << fit_src_bb->GetParError(1) << ","
-    << std::defaultfloat
-    << DAT_HIST->Integral() << ","
-    << BKG_HIST->Integral() << ","
-    << SRC_HIST->Integral() << ","
-    << TS_bb << ","
-    << signal << ","
-    << fit_src_bb->GetParError(1) << std::endl;
-
-
-  fracs[0] = fit_src_nobb->GetParameter(0);
-  fracs[1] = fit_src_nobb->GetParameter(1);
-  fracs[2] = fit_src_bb->GetParameter(0);
-  fracs[3] = fit_src_bb->GetParameter(1);
-  fracs[4] = fit_nosrc_nobb->GetParameter(0);
-  fracs[5] = fit_nosrc_bb->GetParameter(0);
-
-  if(args.hist & 2 && hists) histogram_fit_data(fracs, ins, &args, hists, fit_param, fit_src_bb);
-  if(args.output & 4) print_errors(fit_src_bb, fit_param, OUTPATH);
-  if(args.graphics & 1) map_likelihood(fit_src_nobb->GetParameter(0), fit_src_nobb->GetParameter(1), "Std", ins, args, OUTPATH, LONGOUTPATH);
-  if(args.graphics & 2) map_likelihood(fit_src_bb->GetParameter(0), fit_src_bb->GetParameter(1), "BB", ins, args, OUTPATH, LONGOUTPATH);
-  */
 }
 
 /**
@@ -532,15 +284,10 @@ void fit(indices_t ins, args_t *args, std::string fit_param, hists_t *hists){
   first loads data then runs the fit
   for each bin combination and each fit
   parameter.
-
-
-
-
 */
 int main(int argc, char* argv[]){
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return 1;
-  //prepare_std_output_files(*args); //TODO remove
   init_output_root_file();
   indices_t indices;
   //TODO fix indices. Maybe make them more controllable
@@ -563,21 +310,12 @@ int main(int argc, char* argv[]){
               hists->bdt_bkg = new TH1D("BDTBkgHist", "BDT Bkg", NBIN, BDTLOW, BDTHIGH);
               hists->bdt_src = new TH1D("BDTSrcHist", "BDT Src", NBIN, BDTLOW, BDTHIGH);
             }
-            if(args->graphics & 4){
-              hists->msw_msl_dat = new TH2D("Data_MSWvsMSL", "Data MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
-              hists->msw_msl_bkg = new TH2D("Bkg_MSWvsMSL", "Bkg MSWvsMSL", NBIN, MSWLOW, MSWHIGH, NBIN, MSWLOW, MSWHIGH);
-            }
             hists->outpath = OUTPATH;
             hists->longoutpath = LONGOUTPATH;
             loadData(indices, *args, hists);
             if(!hists->msw_dat && !hists->bdt_dat) throw 407;
             if(!hists->msw_bkg && !hists->bdt_bkg) throw 408;
             if(!hists->msw_src && !hists->bdt_src) throw 409;
-            if(args->output & 2 && args->fit_params & 1) printRawData(hists, "MSW");
-            if(args->output & 2 && args->fit_params & 2) printRawData(hists, "BDT");
-            if(args->hist & 1 && args->fit_params & 1) histogram_raw_data(hists, "MSW");
-            if(args->hist & 1 && args->fit_params & 2) histogram_raw_data(hists, "BDT");
-            if(args->graphics & 4) plot_msw_vs_msl(hists);
             if(!(hists->msw_dat->Integral() + hists->bdt_dat->Integral())) continue;
             if(!(hists->msw_bkg->Integral() + hists->bdt_bkg->Integral())) continue;
             if(!(hists->msw_src->Integral() + hists->bdt_src->Integral())) continue;
@@ -609,8 +347,6 @@ int main(int argc, char* argv[]){
             delete hists->bdt_dat;
             delete hists->bdt_bkg;
             delete hists->bdt_src;
-            delete hists->msw_msl_dat;
-            delete hists->msw_msl_bkg;
           }
         }
       }
@@ -640,29 +376,8 @@ OPTIONS:
     Available: msw, bdt
     Default: msw
 
-  -g GRAPHICS, --graphics GRAPHICS
-    Triggers output of graphics files.
-    Available: none, stdlnL, bblnL, mswmsl, all.
-    Default: none.
-
   -h, --help
     Print help text and exit.
-
-  -hist DATA, --histogram DATA
-    Triggers output of histograms.
-    Available: none, raw, fit, all.
-    Default: none.
-
-  --no-cache <Not Implemented>
-    Disables input data caching
-
-  -op, --op-info PATH
-    Passes file path to be used where optional info is printed.
-
-  -out DATA, --output DATA
-    Triggers output of ascii files.
-    Available: none, bins, raw, errors, cuts, all.
-    Default: none.
 
   -v VERBOSITY, --verbosity VERBOSITY
     Controls the verbosity of MINUIT.
@@ -677,46 +392,6 @@ OPTIONS:
       }
       if(i < argc - 1 && !strcmp(argv[i+1], "bbmlm")){
         args->format = Format_t::Bbmlm;
-      }
-    }
-    if(!strcmp(argv[i], "-hist") || !strcmp(argv[i], "--histogram")){
-      if(i < argc - 1 && !strcmp(argv[i+1], "none")){
-        args->hist = 0;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "raw")){
-        if(args->hist & 1) args->hist -= 1;
-        else args->hist += 1;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "fit")){
-        if(args->hist & 2) args->hist -= 2;
-        else args->hist += 2;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "all")){
-        args->hist = 3;
-      }
-    }
-    if(!strcmp(argv[i], "-out") || !strcmp(argv[i], "--output")){
-      if(i < argc - 1 && !strcmp(argv[i+1], "none")){
-        args->output = 0;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "bins")){
-        if(args->output & 1) args->output -= 1;
-        else args->output += 1;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "raw")){
-        if(args->output & 2) args->output -= 2;
-        else args->output += 2;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "errors")){
-        if(args->output & 4) args->output -= 4;
-        else args->output += 4;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "cuts")){
-        if(args->output & 8) args->output -= 8;
-        else args->output += 8;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "all")){
-        args->output = 15;
       }
     }
     if(!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbosity")){
@@ -749,32 +424,6 @@ OPTIONS:
         args->bin_vars = 31;
       }
     }
-    if(!strcmp(argv[i], "-g") || !strcmp(argv[i], "--graphics")){
-      if(i < argc - 1 && !strcmp(argv[i+1], "none")){
-        args->graphics = 0;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "stdlnL") && !(args->graphics & 1)){
-        if(args->graphics & 1) args->graphics -= 1;
-        else args->graphics += 1;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "bblnL") && !(args->graphics & 2)){
-        if(args->graphics & 2) args->graphics -= 2;
-        else args->graphics += 2;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "mswmsl") && !(args->graphics & 4)){
-        if(args->graphics & 4) args->graphics -= 4;
-        else args->graphics += 4;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "all")){
-        args->graphics = 7;
-      }
-    }
-    if(!strcmp(argv[i], "-op") || !strcmp(argv[i], "--op-info")){
-      if(i < argc -1) args->op_info = argv[i+1];
-    }
-    if(!strcmp(argv[i], "--no-cache")){
-      args->cache = false;
-    }
     if(!strcmp(argv[i], "--fit-parameter")){
       if(i < argc - 1 && !strcmp(argv[i+1], "msw")){
         if(args->fit_params & 1) args->fit_params -= 1;
@@ -787,42 +436,6 @@ OPTIONS:
     }
   }
   return 0;
-}
-
-void prepare_std_output_files(args_t args){
-  std::vector<std::string> outfiles;
-  std::vector<std::string> summary_files;
-  if(args.fit_params & 1){
-    outfiles.push_back("fitstats_MSW_std.csv");
-    outfiles.push_back("fitstats_MSW_bb.csv");
-    summary_files.push_back("summary_MSW.csv");
-  }
-  if(args.fit_params & 2){
-    outfiles.push_back("fitstats_BDT_std.csv");
-    outfiles.push_back("fitstats_BDT_bb.csv");
-    summary_files.push_back("summary_BDT.csv");
-  }
-  for(std::string str : outfiles){
-    std::ofstream f(str);
-    if(args.bin_vars & 1)  f << "ZA,";
-    if(args.bin_vars & 2)  f << "E,";
-    if(args.bin_vars & 4)  f << "T,";
-    if(args.bin_vars & 8)  f << "A,";
-    if(args.bin_vars & 16) f << "O,";
-    f << "bkgfrac_nosrc, bkgfrac, srcfrac, dataCt, bkgCt, srcCt, lnL_nosrc, lnL_src, TS" << std::endl;
-    f.close();
-  }
-  for(std::string str : summary_files){
-    std::ofstream f(str);
-    if(args.bin_vars & 1)  f << "ZA,";
-    if(args.bin_vars & 2)  f << "E,";
-    if(args.bin_vars & 4)  f << "T,";
-    if(args.bin_vars & 8)  f << "A,";
-    if(args.bin_vars & 16) f << "O,";
-    f << "bkgfrac,e_bkgfrac,srcfrac,e_srcfrac,dataCt,bkgCt,srcCt,TS,Signal,e_Signal" << std::endl;
-    f.close();
-  }
-
 }
 
 int optional_binning(indices_t indices, args_t args){
