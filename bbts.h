@@ -45,7 +45,7 @@
 #define MSWHIGH 1.3125
 #define BDTLOW 0.589
 #define BDTHIGH 1.011
-#define NBIN 20
+#define NBIN 20 //TODO make bins parameter dependent
 #define PW 15
 
 extern double ZABINS[];

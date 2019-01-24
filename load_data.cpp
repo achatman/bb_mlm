@@ -441,17 +441,17 @@ double loadData_bbmlm(indices_t ins, args_t args, std::string pathbase, hists_t 
   }
 
   TTreeReader reader("ntuple", infile);
-  TTreeReaderValue<double> ra(reader, "RA");
-  TTreeReaderValue<double> dec(reader, "DEC");
-  TTreeReaderValue<double> zenith(reader, "Zenith");
-  TTreeReaderValue<double> energy(reader, "Energy");
-  TTreeReaderValue<double> ntels(reader, "NTels");
-  TTreeReaderValue<double> azimuth(reader, "Azimuth");
-  TTreeReaderValue<double> offset(reader, "Offset");
-  TTreeReaderValue<double> msw(reader, "MSW");
-  TTreeReaderValue<double> msl(reader, "MSL");
-  TTreeReaderValue<double> bdt(reader, "BDT");
-  TTreeReaderValue<double> height(reader, "MaxHeight_KM");
+  TTreeReaderValue<float> ra(reader, "RA");
+  TTreeReaderValue<float> dec(reader, "DEC");
+  TTreeReaderValue<float> zenith(reader, "Zenith");
+  TTreeReaderValue<float> energy(reader, "Energy_GeV");
+  TTreeReaderValue<float> ntels(reader, "NTels");
+  TTreeReaderValue<float> azimuth(reader, "Azimuth");
+  TTreeReaderValue<float> offset(reader, "Offset");
+  TTreeReaderValue<float> msw(reader, "MSW");
+  TTreeReaderValue<float> msl(reader, "MSL");
+  TTreeReaderValue<float> bdt(reader, "BDT");
+  TTreeReaderValue<float> height(reader, "ShowerHeightMax_KM");
 
   cuts_t cuts;
   timestamp;

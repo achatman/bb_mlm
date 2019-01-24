@@ -112,7 +112,7 @@ void histogram_fit_data(double fracs[6], indices_t ins, args_t *args, hists_t *h
   TH1D* raw_src = new TH1D(*srchist);
 
   //Canvas set up
-  
+
   TCanvas *c1 = new TCanvas("", hists->outpath.c_str(), 1600, 1600);
   c1->Divide(2,2);
 
@@ -458,10 +458,10 @@ void write_to_root_file(args_t *args, hists_t *hists, double *fracs, std::string
     std::cerr << "Failed to open output file." << std::endl;
   }
   TDirectory *tld;
-  if(srcexcl) tld = fout->Get("Source Excl");
-  else tld = fout->Get("All");
-  TDirectory *paramdir = tld->Get(fit_param);
-  TDirectory *maindir = paramdir->mkdir(hists->longoutpath);
+  if(srcexcl) tld = (TDirectory*)fout->Get("Source Excl");
+  else tld = (TDirectory*)fout->Get("All");
+  TDirectory *paramdir = (TDirectory*)tld->Get(fit_param.c_str());
+  TDirectory *maindir = paramdir->mkdir(hists->longoutpath.c_str());
 
   maindir->cd();
   //Write input histograms
@@ -478,9 +478,9 @@ void write_to_root_file(args_t *args, hists_t *hists, double *fracs, std::string
     hists->bdt_src->Write("Source");
     parlow = BDTLOW; parhigh = BDTHIGH;
   }
-  TH1D* nobb_F = new TH1D("nobb_F", "Std Fit", NBINS, parlow, parhigh);
-  TH1D* bb_F = new TH1D("bb_F", "BB Fit Data", NBINS, parlow, parhigh);
-  TH1D* bb_B = new TH1D("bb_B", "BB Fit Bkg", NBINS, parlow, parhigh);
+  TH1D* nobb_F = new TH1D("nobb_F", "Std Fit", NBIN, parlow, parhigh);
+  TH1D* bb_F = new TH1D("bb_F", "BB Fit Data", NBIN, parlow, parhigh);
+  TH1D* bb_B = new TH1D("bb_B", "BB Fit Bkg", NBIN, parlow, parhigh);
 
   src_noBB(fracs[0], fracs[1], 0, nobb_F);
   src_BB(fracs[2], fracs[3], 0, bb_F, bb_B);

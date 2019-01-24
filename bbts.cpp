@@ -404,7 +404,7 @@ void fit(indices_t ins, args_t *args, std::string fit_param, hists_t *hists){
   TFitter* fit_nosrc_bb   = new TFitter(1);
   TFitter* fit_src_bb     = new TFitter(2);
   //Set Printout
-  double p1 = args.verbosity;
+  double p1 = args->verbosity;
   fit_nosrc_nobb->ExecuteCommand("SET PRINTOUT", &p1, 1);
   fit_src_nobb  ->ExecuteCommand("SET PRINTOUT", &p1, 1);
   fit_nosrc_bb  ->ExecuteCommand("SET PRINTOUT", &p1, 1);
@@ -543,9 +543,10 @@ int main(int argc, char* argv[]){
   //prepare_std_output_files(*args); //TODO remove
   init_output_root_file();
   indices_t indices;
-  for(indices.za = 0; indices.za < 6; indices.za++){
-    for(indices.e = 0; indices.e < 4; indices.e++){
-      for(indices.tel = 0; indices.tel < 2; indices.tel++){
+  //TODO fix indices. Maybe make them more controllable
+  for(indices.za = 3; indices.za < 4; indices.za++){
+    for(indices.e = 0; indices.e < 2; indices.e++){
+      for(indices.tel = 0; indices.tel < 1; indices.tel++){
         for(indices.az = 0; indices.az < 8; indices.az++){
           for(indices.off = 0; indices.off < 4; indices.off++){
             if(optional_binning(indices, *args)) continue;
