@@ -54,13 +54,12 @@ extern int TBINS[];
 extern double AZBINS[];
 extern double OBINS[];
 
-enum class Format_t{Vegas, Bbmlm};
+enum class Fit_Par_t{msw, bdt};
 struct args_t {
-  args_t() : format(Format_t::Vegas),
+  args_t() :
   verbosity(-1),
   bin_vars(7),
   fit_params(1) {}
-  Format_t format;
   int verbosity;
   int bin_vars;
   int fit_params;

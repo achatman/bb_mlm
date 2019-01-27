@@ -366,11 +366,6 @@ OPTIONS:
     Available: zenith, energy, telescope, azimuth, offset, all.
     Default: zenith, energy, telescope.
 
-  -d FORMAT, --data-format FORMAT
-    Format of the imput data.
-    Available: vegas, bbmlm.
-    Default: vegas.
-
   --fit-parameter
     Which parameter(s) to run the fit on.
     Available: msw, bdt
@@ -385,14 +380,6 @@ OPTIONS:
       )";
       std::cout << help_text << std::endl;
       return 1;
-    }
-    if(!strcmp(argv[i], "-d") || !strcmp(argv[i], "--data-format")){
-      if(i < argc - 1 && !strcmp(argv[i+1], "vegas")){
-        args->format = Format_t::Vegas;
-      }
-      if(i < argc - 1 && !strcmp(argv[i+1], "bbmlm")){
-        args->format = Format_t::Bbmlm;
-      }
     }
     if(!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbosity")){
       if(i < argc - 1){
