@@ -47,6 +47,10 @@
 #define BDTHIGH 1.011
 #define NBIN 20 //TODO make bins parameter dependent
 #define PW 15
+#define MAX_OFFSET 1.75
+#define MAX_MSL 1.3
+#define MIN_MSL 0.05
+#define MIN_HEIGHT 7
 
 extern double ZABINS[];
 extern double EBINS[];
@@ -73,7 +77,7 @@ struct indices_t{
 };
 struct cuts_t{
   cuts_t() : za(0), e(0), tel(0), az(0), off(0),
-  src(0), passed(0), read(0) {}
+  src(0), read(0) {}
   int za;
   int e;
   int tel;
@@ -81,16 +85,14 @@ struct cuts_t{
   int off;
   int par;
   int src;
-  int passed;
+  int msl;
+  int height;
   int read;
 };
 struct hists_t{
-  TH1D* msw_dat;
-  TH1D* msw_bkg;
-  TH1D* msw_src;
-  TH1D* bdt_dat;
-  TH1D* bdt_bkg;
-  TH1D* bdt_src;
+  TH1D* dat;
+  TH1D* bkg;
+  TH1D* src;
   std::string outpath;
   std::string longoutpath;
 };

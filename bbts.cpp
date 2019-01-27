@@ -235,7 +235,7 @@ void wrapper_src_BB(Int_t &nDim, Double_t *gout, Double_t &result, Double_t par[
   Should have the value "MSW" or "BDT".
   @param hists Struct holding input histograms
 */
-void fit(indices_t ins, args_t *args, std::string fit_param, hists_t *hists){
+void fit(indices_t ins, args_t *args, Fit_Par_t fit_param, hists_t *hists){
   //Set up fitters
   TFitter* fit_nosrc_nobb = new TFitter(1);
   TFitter* fit_src_nobb   = new TFitter(2);
@@ -291,6 +291,7 @@ int main(int argc, char* argv[]){
   init_output_root_file();
   indices_t indices;
   //TODO fix indices. Maybe make them more controllable
+  //TODO Write method to create vector of indices to run. Then iterate.
   for(indices.za = 3; indices.za < 4; indices.za++){
     for(indices.e = 0; indices.e < 2; indices.e++){
       for(indices.tel = 0; indices.tel < 1; indices.tel++){
@@ -298,55 +299,46 @@ int main(int argc, char* argv[]){
           for(indices.off = 0; indices.off < 4; indices.off++){
             if(optional_binning(indices, *args)) continue;
             TH1::SetDefaultSumw2();
-            //Initialize Histograms
             hists_t *hists = new hists_t;
-            if(args->fit_params & 1){
-              hists->msw_dat = new TH1D("MSWDataHist", "MSW Data", NBIN, MSWLOW, MSWHIGH);
-              hists->msw_bkg = new TH1D("MSWBkgHist", "MSW Bkg", NBIN, MSWLOW, MSWHIGH);
-              hists->msw_src = new TH1D("MSWSrcHist", "MSW Src", NBIN, MSWLOW, MSWHIGH);
-            }
-            if(args->fit_params & 2){
-              hists->bdt_dat = new TH1D("BDTDataHist", "BDT Data", NBIN, BDTLOW, BDTHIGH);
-              hists->bdt_bkg = new TH1D("BDTBkgHist", "BDT Bkg", NBIN, BDTLOW, BDTHIGH);
-              hists->bdt_src = new TH1D("BDTSrcHist", "BDT Src", NBIN, BDTLOW, BDTHIGH);
-            }
             hists->outpath = OUTPATH;
             hists->longoutpath = LONGOUTPATH;
-            loadData(indices, *args, hists);
-            if(!hists->msw_dat && !hists->bdt_dat) throw 407;
-            if(!hists->msw_bkg && !hists->bdt_bkg) throw 408;
-            if(!hists->msw_src && !hists->bdt_src) throw 409;
-            if(!(hists->msw_dat->Integral() + hists->bdt_dat->Integral())) continue;
-            if(!(hists->msw_bkg->Integral() + hists->bdt_bkg->Integral())) continue;
-            if(!(hists->msw_src->Integral() + hists->bdt_src->Integral())) continue;
-
+            Fit_Par_t fit_par;
             //MSW Fit
             if(args->fit_params & 1){
-              DAT_HIST = hists->msw_dat;
-              BKG_HIST = hists->msw_bkg;
-              SRC_HIST = hists->msw_src;
-              OUTPATH = "MSW" + hists->outpath;
-              LONGOUTPATH = "MSW" + hists->longoutpath;
-              fit(indices, args, "MSW", hists);
+                hists->dat = new TH1D("MSWDataHist", "MSW Data", NBIN, MSWLOW, MSWHIGH);
+                hists->bkg = new TH1D("MSWBkgHist", "MSW Bkg", NBIN, MSWLOW, MSWHIGH);
+                hists->src = new TH1D("MSWSrcHist", "MSW Src", NBIN, MSWLOW, MSWHIGH);
+                fit_par = Fit_Par_t::msw;
             }
-
             //BDT Fit
             if(args->fit_params & 2){
-              DAT_HIST = hists->bdt_dat;
-              BKG_HIST = hists->bdt_bkg;
-              SRC_HIST = hists->bdt_src;
-              OUTPATH = "BDT" + hists->outpath;
-              LONGOUTPATH = "BDT" + hists->longoutpath;
-              fit(indices, args, "BDT", hists);
+                hists->dat = new TH1D("BDTDataHist", "BDT Data", NBIN, BDTLOW, BDTHIGH);
+                hists->bkg = new TH1D("BDTBkgHist", "BDT Bkg", NBIN, BDTLOW, BDTHIGH);
+                hists->src = new TH1D("BDTSrcHist", "BDT Src", NBIN, BDTLOW, BDTHIGH);
+                fit_par = Fit_Par_t::bdt;
             }
+            loadData(indices, args, hists, fit_par);
+
+            if(!hists->dat) throw 407;
+            if(!hists->bkg) throw 408;
+            if(!hists->src) throw 409;
+            if(!hists->dat->Integral()) continue;
+            if(!hists->bkg->Integral()) continue;
+            if(!hists->src->Integral()) continue;
+
+            //TODO Fix this. It's gross.
+            DAT_HIST = hists->dat;
+            BKG_HIST = hists->bkg;
+            SRC_HIST = hists->src;
+            OUTPATH = hists->outpath;
+            LONGOUTPATH = hists->longoutpath;
+
+            fit(indices, *args, fit_par, hists);
 
             //Clean up hists
-            delete hists->msw_dat;
-            delete hists->msw_bkg;
-            delete hists->msw_src;
-            delete hists->bdt_dat;
-            delete hists->bdt_bkg;
-            delete hists->bdt_src;
+            delete hists->dat;
+            delete hists->bkg;
+            delete hists->src;
           }
         }
       }

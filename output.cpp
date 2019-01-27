@@ -31,7 +31,7 @@ void init_output_root_file(){
   Should have the value "MSW" or "BDT".
   @param srcexcl Whether sources were excluded.
 */
-void write_to_root_file(args_t *args, hists_t *hists, double *fracs, std::string fit_param, bool srcexcl){
+void write_to_root_file(args_t *args, hists_t *hists, double *fracs, Fit_Par_t fit_param, bool srcexcl){
   TFile *fout = new TFile("output.root", "UPDATE");
   if (!fout->IsOpen()){
     std::cerr << "Failed to open output file." << std::endl;
@@ -39,22 +39,21 @@ void write_to_root_file(args_t *args, hists_t *hists, double *fracs, std::string
   TDirectory *tld;
   if(srcexcl) tld = (TDirectory*)fout->Get("Source Excl");
   else tld = (TDirectory*)fout->Get("All");
-  TDirectory *paramdir = (TDirectory*)tld->Get(fit_param.c_str());
+  TDirectory *paramdir;
+  if(fit_param == Fit_Par_t::msw) (TDirectory*)tld->Get("MSW");
+  else if(fit_param == Fit_Par_t::bdt) (TDirectory*)tld->Get("BDT");
   TDirectory *maindir = paramdir->mkdir(hists->longoutpath.c_str());
 
   maindir->cd();
   //Write input histograms
+  hists->dat->Write("Data");
+  hists->bkg->Write("Background");
+  hists->src->Write("Source");
   double parlow, parhigh;
-  if(fit_param == "MSW"){
-    hists->msw_dat->Write("Data");
-    hists->msw_bkg->Write("Background");
-    hists->msw_src->Write("Source");
+  if(fit_param == Fit_Par_t::msw){
     parlow = MSWLOW; parhigh = MSWHIGH;
   }
-  else if(fit_param == "BDT"){
-    hists->bdt_dat->Write("Data");
-    hists->bdt_bkg->Write("Background");
-    hists->bdt_src->Write("Source");
+  else if(fit_param == Fit_Par_t::bdt){
     parlow = BDTLOW; parhigh = BDTHIGH;
   }
   TH1D* nobb_F = new TH1D("nobb_F", "Std Fit", NBIN, parlow, parhigh);
