@@ -18,139 +18,13 @@ typedef struct SourceCut
   }
 } SourceCut_t;
 
-
-/*  Return value is a bit vector.
- *  bit 0 - Passed cuts for msw
- *  bit 1 - Passed cuts for bdt
- *
- *  Ex. rval = 2 -> event is suitable for bdt fit but not msw.
- */
-int bin_event(Cut_Params_t *params, cuts_t *cuts, args_t *args, indices_t *ins, std::vector<SourceCut_t> &source_cuts){
-  bool fail = false;
-
-  //Source Cut
-  if(source_cuts.size()){
-    VACoordinatePair eventCoord = VACoordinatePair(
-      params->eventRa,
-      params->eventDec,
-      VACoordinates::J2000,
-      VACoordinates::Deg);
-    bool fail_src_cuts;
-    for(auto &it: source_cuts){
-      fail_src_cuts = it.InsideExclRadius(eventCoord);
-      if(fail_src_cuts) break;
-    }
-    if(fail_src_cuts){
-      cuts->src++;
-      fail = true;
-    }
-  }
-
-  //ZA cut
-  int z_bin = -42;
-  if(args->bin_vars & 1){
-    for(int z = 0; z < 6; z++){
-      if(params->zenith < ZABINS[z+1] && params->zenith > ZABINS[z]){
-        z_bin = z;
-      }
-    }
-    if(z_bin == -42){
-      cuts->za++;
-      fail = true;
-    }
-  }
-
-  //Energy Cut
-  int e_bin = -42;
-  if(args->bin_vars & 2){
-    for(int e = 0; e < 4; e++){
-      if(params->energy < EBINS[e+1] && params->energy > EBINS[e]){
-        e_bin = e;
-      }
-    }
-    if(e_bin == -42){
-      cuts->e++;
-      fail = true;
-    }
-  }
-
-  //Tel Cut
-  if(args->bin_vars & 4){
-    if(params->ntels == 2){
-      cuts->tel++;
-      fail = true;
-    }
-  }
-
-  //AZ Cut
-  int a_bin = -42;
-  if(args->bin_vars & 8){
-    for(int a = 0; a < 8; a++){
-      if(params->azimuth < AZBINS[a+1] && params->azimuth > AZBINS[a]){
-        a_bin = a;
-      }
-    }
-    if(a_bin == -42){
-      cuts->az++;
-      fail = true;
-    }
-  }
-
-  //Offset Cut
-  int o_bin = -42;
-  if(args->bin_vars & 16){
-    for(int o = 0; o < 8; o++){
-      if(params->offset < OBINS[o+1] && params->offset > OBINS[o]){
-        o_bin = o;
-      }
-    }
-    if(o_bin == -42){
-      cuts->off++;
-      fail = true;
-    }
-  }
-  else if(params->offset > 1.75){
-    cuts->off++;
-    fail = true;
-  }
-
-  params->zbin = z_bin;
-  params->ebin = e_bin;
-  params->abin = a_bin;
-  params->obin = o_bin;
-
-  if(fail) return 0;
-
-  int rval = 0;
-  bool msw_fail = false;
-  bool bdt_fail = false;
-
-  //MSL Cut
-  if(params->msl > 1.3 || params->msl < 0.05) msw_fail = true;
-
-  //Shower Height Cut
-  if(params->height < 7) msw_fail = true;
-
-  //MSW Cut (No need to carry around over/underflow in hists)
-  if(params->msw < MSWLOW || params->msw > MSWHIGH) msw_fail = true;
-
-  //BDT Cut (See above)
-  if(params->bdt < BDTLOW || params->bdt > BDTHIGH) bdt_fail = true;
-
-  if(!msw_fail) rval += 1;
-  if(!bdt_fail) rval += 2;
-
-  return rval;
-}
-
-
-bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args){
-  TTreeReaderValue<float> zenith(reader, "Zenith");
-  TTreeReaderValue<float> energy(reader, "Energy_GeV");
-  TTreeReaderValue<float> ntels(reader, "NTels");
-  TTreeReaderValue<float> azimuth(reader, "Azimuth");
-  TTreeReaderValue<float> offset(reader, "Offset");
-  TTreeReaderValue<float> src_excl(reader, "Src_Excl");
+bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins){
+  TTreeReaderValue<float> zenith(*reader, "Zenith");
+  TTreeReaderValue<float> energy(*reader, "Energy_GeV");
+  TTreeReaderValue<float> ntels(*reader, "NTels");
+  TTreeReaderValue<float> azimuth(*reader, "Azimuth");
+  TTreeReaderValue<float> offset(*reader, "Offset");
+  TTreeReaderValue<float> src_excl(*reader, "Src_Excl");
 
   bool pass = true;
 
@@ -208,10 +82,10 @@ bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args){
   return pass;
 }
 
-bool check_event_msw(TTreeReader *reader, cuts_t *cuts, args_t *args){
-  TTreeReaderValue<float> msw(reader, "MSW");
-  TTreeReaderValue<float> msl(reader, "MSL");
-  TTreeReaderValue<float> height(reader, "ShowerHeightMax_KM");
+bool check_event_msw(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins){
+  TTreeReaderValue<float> msw(*reader, "MSW");
+  TTreeReaderValue<float> msl(*reader, "MSL");
+  TTreeReaderValue<float> height(*reader, "ShowerHeightMax_KM");
 
   bool pass = true;
 
@@ -236,8 +110,8 @@ bool check_event_msw(TTreeReader *reader, cuts_t *cuts, args_t *args){
   return pass;
 }
 
-bool check_event_bdt(TTreeReader *reader, cuts_t *cuts, args_t *args){
-  TTreeReaderValue<float> bdt(reader, "BDT");
+bool check_event_bdt(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins){
+  TTreeReaderValue<float> bdt(*reader, "BDT");
 
   bool pass = true;
 
@@ -251,14 +125,14 @@ bool check_event_bdt(TTreeReader *reader, cuts_t *cuts, args_t *args){
 }
 
 
-double loadData_bbmlm(indices_t *ins, args_t *args, TH1D *hist, Fit_Par_t fit_par, std::string infile){
-  TFile *infile = TFile::Open(infile.c_str());
+double loadData_bbmlm(indices_t *ins, args_t *args, TH1D *hist, Fit_Par_t fit_par, std::string file_path){
+  TFile *infile = TFile::Open(file_path.c_str());
   if(!infile->IsOpen()){
-    std::cerr << "Cannot open " << path.str() << std::endl;
+    std::cerr << "Cannot open " << file_path << std::endl;
     return -1;
   }
   else{
-    std::cout << "Reading " << path.str() << std::endl;
+    std::cout << "Reading " << file_path << std::endl;
   }
 
   TTreeReader reader("ntuple", infile);
@@ -272,13 +146,13 @@ double loadData_bbmlm(indices_t *ins, args_t *args, TH1D *hist, Fit_Par_t fit_pa
 
     bool pass = false;
     if(fit_par == Fit_Par_t::msw){
-      pass = check_event(&reader, &cuts, args)
-           & check_event_msw(&reader, &cuts, args);
+      pass = check_event(&reader, &cuts, args, ins)
+           & check_event_msw(&reader, &cuts, args, ins);
       if(pass) hist->Fill(*msw);
     }
     else if(fit_par == Fit_Par_t::bdt){
-      pass = check_event(&reader, &cuts, args)
-           & check_event_bdt(&reader, &cuts, args);
+      pass = check_event(&reader, &cuts, args, ins)
+           & check_event_bdt(&reader, &cuts, args, ins);
       if(pass) hist->Fill(*bdt);
     }
 

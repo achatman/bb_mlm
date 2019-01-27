@@ -19,8 +19,8 @@ double OBINS[] = {0.0, 1.0, 1.4, 1.7, 2.0};
 
 //helper function declarations
 int parse_command_line(int argc, char* argv[], args_t* args);
-void prepare_std_output_files(args_t args);
 int optional_binning(indices_t indices, args_t args);
+void get_bins(vector<indices_t> *ins_list, args_t *args);
 
 /**
   Calculates the negative log likelihood
@@ -289,7 +289,54 @@ int main(int argc, char* argv[]){
   args_t* args = new args_t;
   if(parse_command_line(argc, argv, args)) return 1;
   init_output_root_file();
-  indices_t indices;
+  std::vector<indices_t> *ins_list = new std::vector<indices_t>;
+  get_bins(ins_list, args);
+  for(indices_t &ins : *ins_list){
+    TH1::SetDefaultSumw2();
+    hists_t *hists = new hists_t;
+    hists->outpath = OUTPATH;
+    hists->longoutpath = LONGOUTPATH;
+    Fit_Par_t fit_par;
+    //MSW Fit
+    if(args->fit_params & 1){
+      hists->dat = new TH1D("MSWDataHist", "MSW Data", NBIN, MSWLOW, MSWHIGH);
+      hists->bkg = new TH1D("MSWBkgHist", "MSW Bkg", NBIN, MSWLOW, MSWHIGH);
+      hists->src = new TH1D("MSWSrcHist", "MSW Src", NBIN, MSWLOW, MSWHIGH);
+      fit_par = Fit_Par_t::msw;
+    }
+    //BDT Fit
+    if(args->fit_params & 2){
+      hists->dat = new TH1D("BDTDataHist", "BDT Data", NBIN, BDTLOW, BDTHIGH);
+      hists->bkg = new TH1D("BDTBkgHist", "BDT Bkg", NBIN, BDTLOW, BDTHIGH);
+      hists->src = new TH1D("BDTSrcHist", "BDT Src", NBIN, BDTLOW, BDTHIGH);
+      fit_par = Fit_Par_t::bdt;
+    }
+    loadData(&ins, args, hists, fit_par);
+
+    if(!hists->dat) throw 407;
+    if(!hists->bkg) throw 408;
+    if(!hists->src) throw 409;
+    if(!hists->dat->Integral()) continue;
+    if(!hists->bkg->Integral()) continue;
+    if(!hists->src->Integral()) continue;
+
+    //TODO Fix this. It's gross.
+    DAT_HIST = hists->dat;
+    BKG_HIST = hists->bkg;
+    SRC_HIST = hists->src;
+    OUTPATH = hists->outpath;
+    LONGOUTPATH = hists->longoutpath;
+
+    fit(ins, args, fit_par, hists);
+
+    //Clean up hists
+    delete hists->dat;
+    delete hists->bkg;
+    delete hists->src;
+
+
+  }
+/*
   //TODO fix indices. Maybe make them more controllable
   //TODO Write method to create vector of indices to run. Then iterate.
   for(indices.za = 3; indices.za < 4; indices.za++){
@@ -317,7 +364,7 @@ int main(int argc, char* argv[]){
                 hists->src = new TH1D("BDTSrcHist", "BDT Src", NBIN, BDTLOW, BDTHIGH);
                 fit_par = Fit_Par_t::bdt;
             }
-            loadData(indices, args, hists, fit_par);
+            loadData(&indices, args, hists, fit_par);
 
             if(!hists->dat) throw 407;
             if(!hists->bkg) throw 408;
@@ -333,7 +380,7 @@ int main(int argc, char* argv[]){
             OUTPATH = hists->outpath;
             LONGOUTPATH = hists->longoutpath;
 
-            fit(indices, *args, fit_par, hists);
+            fit(indices, args, fit_par, hists);
 
             //Clean up hists
             delete hists->dat;
@@ -344,6 +391,7 @@ int main(int argc, char* argv[]){
       }
     }
   }
+  */
   return 0;
 }
 
@@ -450,4 +498,47 @@ int optional_binning(indices_t indices, args_t args){
   OUTPATH = path.str();
   LONGOUTPATH = longpath.str();
   return 0;
+}
+
+void get_bins(vector<indices_t> *ins_list, args_t *args){
+  int za_max = 6;
+  int e_max = 4;
+  int tel_max = 2;
+  int az_max = 8;
+  int off_max = 4;
+
+  for(int z = -1; z < za_max; z++){
+    for(int e = -1; e < e_max; e++){
+      for(int t = -1; t < tel_max; t++){
+        for(int a = -1; a < az_max; a++){
+          for(int o = -1; o < off_max; o++){
+
+            if(args->bin_vars&1 && z == -1) continue;
+            else if(!(args->bin_vars&1) && z != -1) continue;
+
+            if(args->bin_vars&2 && e == -1) continue;
+            else if(!(args->bin_vars&2) && e != -1) continue;
+
+            if(args->bin_vars&4 && t == -1) continue;
+            else if(!(args->bin_vars&4) && t != -1) continue;
+
+            if(args->bin_vars&8 && a == -1) continue;
+            else if(!(args->bin_vars&8) && a != -1) continue;
+
+            if(args->bin_vars&16 && o == -1) continue;
+            else if(!(args->bin_vars&16) && o != -1) continue;
+
+            indices_t ins;
+            ins.za = z;
+            ins.e = e;
+            ins.tel = t;
+            ins.az = a;
+            ins.off = o;
+            ins_list->push_back(ins);
+          }
+        }
+      }
+    }
+  }
+
 }

@@ -2,6 +2,6 @@
 #define LOAD_DATA_H
 #include "bbts.h"
 
-void loadData(indices_t ins, args_t args, hists_t *hists);
+void loadData(indices_t *ins, args_t *args, hists_t *hists, Fit_Par_t fit_par);
 
 #endif
