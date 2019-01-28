@@ -74,6 +74,7 @@ struct indices_t{
   int tel;
   int az;
   int off;
+  int src_excl;
 };
 struct cuts_t{
   cuts_t() : za(0), e(0), tel(0), az(0), off(0),
@@ -93,8 +94,6 @@ struct hists_t{
   TH1D* dat;
   TH1D* bkg;
   TH1D* src;
-  std::string outpath;
-  std::string longoutpath;
 };
 
 double nosrc_noBB(double Pb, TH1D* F = 0);

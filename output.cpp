@@ -15,10 +15,34 @@ void init_output_root_file(){
   delete fout;
 }
 
+std::string get_outpath(indices_t *ins){
+    std::stringstream outpath;
+    if(ins->za != -1){
+      outpath << "ZA" << ZABINS[ins->za] << "-" << ZABINS[ins->za+1];
+    }
+    if(ins->e != -1){
+      if(outpath.str().length()) outpath << "_";
+      outpath << "E" << EBINS[ins->e] << "-" << EBINS[ins->e+1];
+    }
+    if(ins->tel != -1){
+      if(outpath.str().length()) outpath << "_";
+      outpath << "T" << TBINS[ins->tel];
+    }
+    if(ins->az != -1){
+      if(outpath.str().length()) outpath << "_";
+      outpath << "AZ" << AZBINS[ins->az] << "-" << AZBINS[ins->az+1];
+    }
+    if(ins->off != -1){
+      if(outpath.str().length()) outpath << "_";
+      outpath << "O" << OBINS[ins->off] << "-" << OBINS[ins->off+1];
+    }
+    return outpath.str();
+}
+
+
 
 /**
   Outputs a bin's data to the output root file.
-  @param args Current arguments struct.
   @param hists Current hists struct.
   @param fracs Pointer to start of array of
   background and source fractions. The order
@@ -31,18 +55,18 @@ void init_output_root_file(){
   Should have the value "MSW" or "BDT".
   @param srcexcl Whether sources were excluded.
 */
-void write_to_root_file(args_t *args, hists_t *hists, double *fracs, Fit_Par_t fit_param, bool srcexcl){
+void write_to_root_file(indices_t *ins, hists_t *hists, double *fracs, Fit_Par_t fit_param){
   TFile *fout = new TFile("output.root", "UPDATE");
   if (!fout->IsOpen()){
     std::cerr << "Failed to open output file." << std::endl;
   }
   TDirectory *tld;
-  if(srcexcl) tld = (TDirectory*)fout->Get("Source Excl");
+  if(ins->src_excl) tld = (TDirectory*)fout->Get("Source Excl");
   else tld = (TDirectory*)fout->Get("All");
   TDirectory *paramdir;
   if(fit_param == Fit_Par_t::msw) (TDirectory*)tld->Get("MSW");
   else if(fit_param == Fit_Par_t::bdt) (TDirectory*)tld->Get("BDT");
-  TDirectory *maindir = paramdir->mkdir(hists->longoutpath.c_str());
+  TDirectory *maindir = paramdir->mkdir(hists->outpath.c_str());
 
   maindir->cd();
   //Write input histograms

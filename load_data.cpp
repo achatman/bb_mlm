@@ -1,7 +1,6 @@
 #include "load_data.h"
 #include "output.h"
 
-std::string OUTSTR;
 
 typedef struct SourceCut
 {
@@ -18,7 +17,7 @@ typedef struct SourceCut
   }
 } SourceCut_t;
 
-bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins){
+bool check_event(TTreeReader *reader, cuts_t *cuts, indices_t *ins){
   TTreeReaderValue<float> zenith(*reader, "Zenith");
   TTreeReaderValue<float> energy(*reader, "Energy_GeV");
   TTreeReaderValue<float> ntels(*reader, "NTels");
@@ -29,7 +28,7 @@ bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins
   bool pass = true;
 
   //ZA Bin
-  if(args->bin_vars & 1){
+  if(ins->za != -1){
     if(*zenith >= ZABINS[ins->za] || *zenith < ZABINS[ins->za]){
       pass = false;
       cuts->za++;
@@ -37,7 +36,7 @@ bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins
   }
 
   //Energy Bin
-  if(args->bin_vars & 2){
+  if(ins->e != -1){
     if(*energy >= EBINS[ins->e] || *energy < EBINS[ins->e]){
       pass = false;
       cuts->e++;
@@ -45,7 +44,7 @@ bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins
   }
 
   //Tel Bin
-  if(args->bin_vars & 4){
+  if(ins->tel != -1){
     if(*ntels != TBINS[ins->tel]){
       pass = false;
       cuts->tel++;
@@ -53,7 +52,7 @@ bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins
   }
 
   //Azimuth Bin
-  if(args->bin_vars & 8){
+  if(ins->az != -1){
     if(*azimuth >= AZBINS[ins->az] || *azimuth < AZBINS[ins->az]){
       pass = false;
       cuts->az++;
@@ -61,7 +60,7 @@ bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins
   }
 
   //Offset Bin
-  if(args->bin_vars & 16){
+  if(ins->off != -1){
     if(*offset >= OBINS[ins->off] || *offset < OBINS[ins->off]){
       pass = false;
       cuts->off++;
@@ -74,7 +73,7 @@ bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins
   }
 
   //Source Cut
-  if(*src_excl){
+  if(*src_excl && ins->src_excl){
     pass = false;
     cuts->src++;
   }
@@ -82,7 +81,7 @@ bool check_event(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins
   return pass;
 }
 
-bool check_event_msw(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins){
+bool check_event_msw(TTreeReader *reader, cuts_t *cuts, indices_t *ins){
   TTreeReaderValue<float> msw(*reader, "MSW");
   TTreeReaderValue<float> msl(*reader, "MSL");
   TTreeReaderValue<float> height(*reader, "ShowerHeightMax_KM");
@@ -110,7 +109,7 @@ bool check_event_msw(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t 
   return pass;
 }
 
-bool check_event_bdt(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t *ins){
+bool check_event_bdt(TTreeReader *reader, cuts_t *cuts, indices_t *ins){
   TTreeReaderValue<float> bdt(*reader, "BDT");
 
   bool pass = true;
@@ -125,7 +124,7 @@ bool check_event_bdt(TTreeReader *reader, cuts_t *cuts, args_t *args, indices_t 
 }
 
 
-double loadData_bbmlm(indices_t *ins, args_t *args, TH1D *hist, Fit_Par_t fit_par, std::string file_path){
+double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string file_path){
   TFile *infile = TFile::Open(file_path.c_str());
   if(!infile->IsOpen()){
     std::cerr << "Cannot open " << file_path << std::endl;
@@ -146,13 +145,13 @@ double loadData_bbmlm(indices_t *ins, args_t *args, TH1D *hist, Fit_Par_t fit_pa
 
     bool pass = false;
     if(fit_par == Fit_Par_t::msw){
-      pass = check_event(&reader, &cuts, args, ins)
-           & check_event_msw(&reader, &cuts, args, ins);
+      pass = check_event(&reader, &cuts, ins)
+           & check_event_msw(&reader, &cuts, ins);
       if(pass) hist->Fill(*msw);
     }
     else if(fit_par == Fit_Par_t::bdt){
-      pass = check_event(&reader, &cuts, args, ins)
-           & check_event_bdt(&reader, &cuts, args, ins);
+      pass = check_event(&reader, &cuts, ins)
+           & check_event_bdt(&reader, &cuts, ins);
       if(pass) hist->Fill(*bdt);
     }
 
@@ -173,10 +172,9 @@ double loadData_bbmlm(indices_t *ins, args_t *args, TH1D *hist, Fit_Par_t fit_pa
   return 1;
 }
 
-void loadData(indices_t *ins, args_t *args, hists_t *hists, Fit_Par_t fit_par){
-  OUTSTR = hists->outpath;
-  loadData_bbmlm(ins, args, hists->dat, fit_par, "data.root");
-  loadData_bbmlm(ins, args, hists->bkg, fit_par, "bkg.root");
-  loadData_bbmlm(ins, args, hists->src, fit_par, "src.root");
+void loadData(indices_t *ins, hists_t *hists, Fit_Par_t fit_par){
+  loadData_bbmlm(ins, hists->dat, fit_par, "data.root");
+  loadData_bbmlm(ins, hists->bkg, fit_par, "bkg.root");
+  loadData_bbmlm(ins, hists->src, fit_par, "src.root");
   std::cout << "Histograms loaded." << std::endl;
 }
