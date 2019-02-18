@@ -15,3 +15,6 @@ output:
 
 bbts: 
 	$$(root-config --cxx --cflags --libs) -I$$VEGAS/include/resultsExtractor/include/ -I$$VEGAS/include/common/include/ -I$$VEGAS/include/showerReconstruction2/include -I$$VEGAS/include/coordinates/include/ -I$$VEGAS/include/eventSelection/include/ -D_OAWG -lMinuit -lTreePlayer -Wall bbts.cpp -c
+
+cache:
+	$$(root-config --cxx --cflags --libs) $$VEGAS/lib/libVEGAScommon.so $$VEGAS/lib/libVEGAScoord.so -I$$VEGAS/include/resultsExtractor/include/ -I$$VEGAS/include/common/include/ -I$$VEGAS/include/showerReconstruction2/include -I$$VEGAS/include/coordinates/include/ -I$$VEGAS/include/eventSelection/include/ -D_OAWG -lMinuit -lTreePlayer -Wall cache_runlist.cpp -o cache_runlist
