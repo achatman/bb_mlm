@@ -5,7 +5,7 @@
 
 //This is a global variable so that it doesn't have to
 //be passed explicitly into the likelihood functions.
-hists_t HISTS;
+hists_t* HISTS;
 
 //Bin boundaries
 double ZABINS[] = {0.00,14.1,25.46,32.59,37.57,42.56,47.55};
@@ -18,7 +18,6 @@ double OBINS[] = {0.0, 1.0, 1.4, 1.7, 2.0};
 //helper function declarations
 int parse_command_line(int argc, char* argv[], args_t* args);
 void get_bins(vector<indices_t> *ins_list, args_t *args);
-std::string get_outpath(indices_t *ins);
 
 /**
   Calculates the negative log likelihood
@@ -273,24 +272,20 @@ void fit(indices_t *ins, args_t *args, Fit_Par_t fit_param){
   fracs[1] = fit_src_nobb->GetParameter(1);
   fracs[2] = fit_src_bb->GetParameter(0);
   fracs[3] = fit_src_bb->GetParameter(1);
-  write_to_root_file(ins, HISTS, fracs, fit_param, 0);
+  write_to_root_file(ins, HISTS, fracs, fit_param);
   //TODO SRCEXCL
 }
 
 void run_fit(indices_t *ins, args_t *args, Fit_Par_t fit_param){
-  loadData(ins, args, HISTS, fit_param);
+  loadData(ins, HISTS, fit_param);
   //Check that everything was loaded correctly
   if(!HISTS->dat) throw 407;
   if(!HISTS->bkg) throw 408;
   if(!HISTS->src) throw 409;
-  if(!HISTS->dat->Integral()) continue;
-  if(!HISTS->bkg->Integral()) continue;
-  if(!HISTS->src->Integral()) continue;
-  fit(&ins, args, fit_param);
-  //Clean up hists
-  delete hists->dat;
-  delete hists->bkg;
-  delete hists->src;
+  if(!HISTS->dat->Integral()) return;
+  if(!HISTS->bkg->Integral()) return;
+  if(!HISTS->src->Integral()) return;
+  fit(ins, args, fit_param);
 }
 
 
@@ -317,6 +312,10 @@ int main(int argc, char* argv[]){
 
       HISTS = hists;
       run_fit(&ins, args, Fit_Par_t::msw);
+      //Clean up hists
+      delete hists->dat;
+      delete hists->bkg;
+      delete hists->src;
     }
     //BDT Fit
     if(args->fit_params & 2){
@@ -326,6 +325,10 @@ int main(int argc, char* argv[]){
 
       HISTS = hists;
       run_fit(&ins, args, Fit_Par_t::bdt);
+      //Clean up hists
+      delete hists->dat;
+      delete hists->bkg;
+      delete hists->src;
     }
   }
   return 0;

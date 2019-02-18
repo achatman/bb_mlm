@@ -78,7 +78,7 @@ struct indices_t{
 };
 struct cuts_t{
   cuts_t() : za(0), e(0), tel(0), az(0), off(0),
-  src(0), read(0) {}
+  par(0), src(0), msl(0), height(0), read(0) {}
   int za;
   int e;
   int tel;

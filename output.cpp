@@ -15,7 +15,7 @@ void init_output_root_file(){
   delete fout;
 }
 
-std::string get_outpath(indices_t *ins){
+std::string get_outpath(indices_t *ins, bool more){
     std::stringstream outpath;
     if(ins->za != -1){
       outpath << "ZA" << ZABINS[ins->za] << "-" << ZABINS[ins->za+1];
@@ -35,6 +35,9 @@ std::string get_outpath(indices_t *ins){
     if(ins->off != -1){
       if(outpath.str().length()) outpath << "_";
       outpath << "O" << OBINS[ins->off] << "-" << OBINS[ins->off+1];
+    }
+    if(more){
+        outpath << "_SE" << ins->src_excl;
     }
     return outpath.str();
 }
@@ -66,7 +69,7 @@ void write_to_root_file(indices_t *ins, hists_t *hists, double *fracs, Fit_Par_t
   TDirectory *paramdir;
   if(fit_param == Fit_Par_t::msw) (TDirectory*)tld->Get("MSW");
   else if(fit_param == Fit_Par_t::bdt) (TDirectory*)tld->Get("BDT");
-  TDirectory *maindir = paramdir->mkdir(hists->outpath.c_str());
+  TDirectory *maindir = paramdir->mkdir(get_outpath(ins).c_str());
 
   maindir->cd();
   //Write input histograms

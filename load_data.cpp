@@ -17,112 +17,6 @@ typedef struct SourceCut
   }
 } SourceCut_t;
 
-bool check_event(TTreeReader *reader, cuts_t *cuts, indices_t *ins){
-  TTreeReaderValue<float> zenith(*reader, "Zenith");
-  TTreeReaderValue<float> energy(*reader, "Energy_GeV");
-  TTreeReaderValue<float> ntels(*reader, "NTels");
-  TTreeReaderValue<float> azimuth(*reader, "Azimuth");
-  TTreeReaderValue<float> offset(*reader, "Offset");
-  TTreeReaderValue<float> src_excl(*reader, "Src_Excl");
-
-  bool pass = true;
-
-  //ZA Bin
-  if(ins->za != -1){
-    if(*zenith >= ZABINS[ins->za] || *zenith < ZABINS[ins->za]){
-      pass = false;
-      cuts->za++;
-    }
-  }
-
-  //Energy Bin
-  if(ins->e != -1){
-    if(*energy >= EBINS[ins->e] || *energy < EBINS[ins->e]){
-      pass = false;
-      cuts->e++;
-    }
-  }
-
-  //Tel Bin
-  if(ins->tel != -1){
-    if(*ntels != TBINS[ins->tel]){
-      pass = false;
-      cuts->tel++;
-    }
-  }
-
-  //Azimuth Bin
-  if(ins->az != -1){
-    if(*azimuth >= AZBINS[ins->az] || *azimuth < AZBINS[ins->az]){
-      pass = false;
-      cuts->az++;
-    }
-  }
-
-  //Offset Bin
-  if(ins->off != -1){
-    if(*offset >= OBINS[ins->off] || *offset < OBINS[ins->off]){
-      pass = false;
-      cuts->off++;
-    }
-  }
-  //Offset Cut
-  else if(*offset > MAX_OFFSET){
-    pass = false;
-    cuts->off++;
-  }
-
-  //Source Cut
-  if(*src_excl && ins->src_excl){
-    pass = false;
-    cuts->src++;
-  }
-
-  return pass;
-}
-
-bool check_event_msw(TTreeReader *reader, cuts_t *cuts, indices_t *ins){
-  TTreeReaderValue<float> msw(*reader, "MSW");
-  TTreeReaderValue<float> msl(*reader, "MSL");
-  TTreeReaderValue<float> height(*reader, "ShowerHeightMax_KM");
-
-  bool pass = true;
-
-  //MSL Cut
-  if(*msl > MAX_MSL || *msl < MIN_MSL){
-    pass = false;
-    cuts->msl++;
-  }
-
-  //Shower Height Cut
-  if(*height < MIN_HEIGHT){
-    pass = false;
-    cuts->height++;
-  }
-
-  //MSW Cut
-  if(*msw > MSWHIGH || *msw < MSWLOW){
-    pass = false;
-    cuts->par++;
-  }
-
-  return pass;
-}
-
-bool check_event_bdt(TTreeReader *reader, cuts_t *cuts, indices_t *ins){
-  TTreeReaderValue<float> bdt(*reader, "BDT");
-
-  bool pass = true;
-
-  //BDT Cut
-  if(*bdt > BDTHIGH || *bdt < BDTLOW){
-    pass = false;
-    cuts->par++;
-  }
-
-  return pass;
-}
-
 
 double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string file_path){
   TFile *infile = TFile::Open(file_path.c_str());
@@ -137,21 +31,98 @@ double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string
   TTreeReader reader("ntuple", infile);
   TTreeReaderValue<float> msw(reader, "MSW");
   TTreeReaderValue<float> bdt(reader, "BDT");
+  TTreeReaderValue<float> zenith(reader, "Zenith");
+  TTreeReaderValue<float> energy(reader, "Energy_GeV");
+  TTreeReaderValue<float> ntels(reader, "NTels");
+  TTreeReaderValue<float> azimuth(reader, "Azimuth");
+  TTreeReaderValue<float> offset(reader, "Offset");
+  TTreeReaderValue<float> src_excl(reader, "Src_Excl");
+  TTreeReaderValue<float> msl(reader, "MSL");
+  TTreeReaderValue<float> height(reader, "ShowerHeightMax_KM");
 
   cuts_t cuts;
   timestamp;
   while(reader.Next()){
     cuts.read++;
 
-    bool pass = false;
+    bool pass = true;
+    //ZA Bin
+    if(ins->za != -1){
+      if(*zenith >= ZABINS[ins->za] || *zenith < ZABINS[ins->za]){
+        pass = false;
+        cuts.za++;
+      }
+    }
+
+    //Energy Bin
+    if(ins->e != -1){
+      if(*energy >= EBINS[ins->e] || *energy < EBINS[ins->e]){
+        pass = false;
+        cuts.e++;
+      }
+    }
+
+    //Tel Bin
+    if(ins->tel != -1){
+      if(*ntels != TBINS[ins->tel]){
+        pass = false;
+        cuts.tel++;
+      }
+    }
+
+    //Azimuth Bin
+    if(ins->az != -1){
+      if(*azimuth >= AZBINS[ins->az] || *azimuth < AZBINS[ins->az]){
+        pass = false;
+        cuts.az++;
+      }
+    }
+
+    //Offset Bin
+    if(ins->off != -1){
+      if(*offset >= OBINS[ins->off] || *offset < OBINS[ins->off]){
+        pass = false;
+        cuts.off++;
+      }
+    }
+    //Offset Cut
+    else if(*offset > MAX_OFFSET){
+      pass = false;
+      cuts.off++;
+    }
+
+    //Source Cut
+    if(*src_excl && ins->src_excl){
+      pass = false;
+      cuts.src++;
+    }
+
     if(fit_par == Fit_Par_t::msw){
-      pass = check_event(&reader, &cuts, ins)
-           & check_event_msw(&reader, &cuts, ins);
+      //MSL Cut
+      if(*msl > MAX_MSL || *msl < MIN_MSL){
+        pass = false;
+        cuts.msl++;
+      }
+
+      //Shower Height Cut
+      if(*height < MIN_HEIGHT){
+        pass = false;
+        cuts.height++;
+      }
+
+      //MSW Cut
+      if(*msw > MSWHIGH || *msw < MSWLOW){
+        pass = false;
+        cuts.par++;
+      }
       if(pass) hist->Fill(*msw);
     }
     else if(fit_par == Fit_Par_t::bdt){
-      pass = check_event(&reader, &cuts, ins)
-           & check_event_bdt(&reader, &cuts, ins);
+      //BDT Cut
+      if(*bdt > BDTHIGH || *bdt < BDTLOW){
+        pass = false;
+        cuts.par++;
+      }
       if(pass) hist->Fill(*bdt);
     }
 
@@ -173,6 +144,7 @@ double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string
 }
 
 void loadData(indices_t *ins, hists_t *hists, Fit_Par_t fit_par){
+  std::cout << "Loading " << get_outpath(ins, true) << std::endl;
   loadData_bbmlm(ins, hists->dat, fit_par, "data.root");
   loadData_bbmlm(ins, hists->bkg, fit_par, "bkg.root");
   loadData_bbmlm(ins, hists->src, fit_par, "src.root");
