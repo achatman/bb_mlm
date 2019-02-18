@@ -1,6 +1,7 @@
 #Compiled Files:
 *.o
 bbts
+cache_runlist
 
 #Input/Output Files:
 *.list
