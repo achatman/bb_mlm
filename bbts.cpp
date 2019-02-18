@@ -266,7 +266,6 @@ void fit(indices_t *ins, args_t *args, Fit_Par_t fit_param){
   fit_src_nobb  ->ExecuteCommand("MINOS", 0, 0);
   fit_nosrc_bb  ->ExecuteCommand("MINOS", 0, 0);
   fit_src_bb    ->ExecuteCommand("MINOS", 0, 0);
-
   double fracs[4];
   fracs[0] = fit_src_nobb->GetParameter(0);
   fracs[1] = fit_src_nobb->GetParameter(1);

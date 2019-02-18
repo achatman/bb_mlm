@@ -48,7 +48,7 @@ double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string
     bool pass = true;
     //ZA Bin
     if(ins->za != -1){
-      if(*zenith >= ZABINS[ins->za] || *zenith < ZABINS[ins->za]){
+      if(*zenith >= ZABINS[ins->za+1] || *zenith < ZABINS[ins->za]){
         pass = false;
         cuts.za++;
       }
@@ -56,7 +56,7 @@ double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string
 
     //Energy Bin
     if(ins->e != -1){
-      if(*energy >= EBINS[ins->e] || *energy < EBINS[ins->e]){
+      if(*energy >= EBINS[ins->e+1] || *energy < EBINS[ins->e]){
         pass = false;
         cuts.e++;
       }
@@ -72,7 +72,7 @@ double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string
 
     //Azimuth Bin
     if(ins->az != -1){
-      if(*azimuth >= AZBINS[ins->az] || *azimuth < AZBINS[ins->az]){
+      if(*azimuth >= AZBINS[ins->az+1] || *azimuth < AZBINS[ins->az]){
         pass = false;
         cuts.az++;
       }
@@ -80,7 +80,7 @@ double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string
 
     //Offset Bin
     if(ins->off != -1){
-      if(*offset >= OBINS[ins->off] || *offset < OBINS[ins->off]){
+      if(*offset >= OBINS[ins->off+1] || *offset < OBINS[ins->off]){
         pass = false;
         cuts.off++;
       }
@@ -127,17 +127,17 @@ double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string
     }
 
   }
-  std::cout << hist->Integral() << " passed cuts." << std::endl;
-  std::cout << cuts.read << " cuts read." << std::endl;
-  std::cout << cuts.src << " failed src cut." << std::endl;
-  std::cout << cuts.par << " failed parameter cut." << std::endl;
-  std::cout << cuts.msl << " failed msl cut." << std::endl;
-  std::cout << cuts.height << " failed height cut." << std::endl;
-  std::cout << cuts.za << " failed za cut." << std::endl;
-  std::cout << cuts.e << " failed energy cut." << std::endl;
-  std::cout << cuts.tel << " failed tel cut." << std::endl;
-  std::cout << cuts.az << " failed az cut." << std::endl;
-  std::cout << cuts.off << " failed off cut." << std::endl;
+  std::cout << "    " << hist->Integral() << " passed cuts." << std::endl;
+  std::cout << "    " << cuts.read << " cuts read." << std::endl;
+  std::cout << "    " << cuts.src << " failed src cut." << std::endl;
+  std::cout << "    " << cuts.par << " failed parameter cut." << std::endl;
+  std::cout << "    " << cuts.msl << " failed msl cut." << std::endl;
+  std::cout << "    " << cuts.height << " failed height cut." << std::endl;
+  std::cout << "    " << cuts.za << " failed za cut." << std::endl;
+  std::cout << "    " << cuts.e << " failed energy cut." << std::endl;
+  std::cout << "    " << cuts.tel << " failed tel cut." << std::endl;
+  std::cout << "    " << cuts.az << " failed az cut." << std::endl;
+  std::cout << "    " << cuts.off << " failed off cut." << std::endl;
 
 
   return 1;

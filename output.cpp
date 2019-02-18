@@ -67,8 +67,8 @@ void write_to_root_file(indices_t *ins, hists_t *hists, double *fracs, Fit_Par_t
   if(ins->src_excl) tld = (TDirectory*)fout->Get("Source Excl");
   else tld = (TDirectory*)fout->Get("All");
   TDirectory *paramdir;
-  if(fit_param == Fit_Par_t::msw) (TDirectory*)tld->Get("MSW");
-  else if(fit_param == Fit_Par_t::bdt) (TDirectory*)tld->Get("BDT");
+  if(fit_param == Fit_Par_t::msw) paramdir = (TDirectory*)tld->Get("MSW");
+  else if(fit_param == Fit_Par_t::bdt) paramdir = (TDirectory*)tld->Get("BDT");
   TDirectory *maindir = paramdir->mkdir(get_outpath(ins).c_str());
 
   maindir->cd();
