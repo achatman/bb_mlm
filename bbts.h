@@ -40,13 +40,17 @@
   Long_t __timestamp = std::time(0);                        \
   std::cout << std::asctime(std::localtime(&__timestamp));  \
 }
-#define PRINTSPACE std::left << std::setw(PW)
+
 #define MSWLOW 0.7875
 #define MSWHIGH 1.3125
 #define BDTLOW 0.589
 #define BDTHIGH 1.011
-#define NBIN 20
+#define NBIN 20 //TODO make bins parameter dependent
 #define PW 15
+#define MAX_OFFSET 1.75
+#define MAX_MSL 1.3
+#define MIN_MSL 0.05
+#define MIN_HEIGHT 7
 
 extern double ZABINS[];
 extern double EBINS[];
@@ -54,27 +58,15 @@ extern int TBINS[];
 extern double AZBINS[];
 extern double OBINS[];
 
-enum class Format_t{Vegas, Sample};
+enum class Fit_Par_t{msw, bdt};
 struct args_t {
-  args_t() : format(Format_t::Vegas),
-  hist(0),
-  output(0),
+  args_t() :
   verbosity(-1),
   bin_vars(7),
-  graphics(0),
-  bidir(0),
-  cache(1),
   fit_params(1) {}
-  Format_t format;
-  int hist;
-  int output;
   int verbosity;
   int bin_vars;
-  int graphics;
-  bool bidir;
-  bool cache;
   int fit_params;
-  std::string op_info;
 };
 struct indices_t{
   int za;
@@ -82,10 +74,11 @@ struct indices_t{
   int tel;
   int az;
   int off;
+  int src_excl;
 };
 struct cuts_t{
   cuts_t() : za(0), e(0), tel(0), az(0), off(0),
-  src(0), passed(0), read(0) {}
+  par(0), src(0), msl(0), height(0), read(0) {}
   int za;
   int e;
   int tel;
@@ -93,25 +86,19 @@ struct cuts_t{
   int off;
   int par;
   int src;
-  int passed;
+  int msl;
+  int height;
   int read;
 };
 struct hists_t{
-  TH1D* msw_dat;
-  TH1D* msw_bkg;
-  TH1D* msw_src;
-  TH1D* bdt_dat;
-  TH1D* bdt_bkg;
-  TH1D* bdt_src;
-  TH2D* msw_msl_dat;
-  TH2D* msw_msl_bkg;
-  std::string outpath;
-  std::string longoutpath;
+  TH1D* dat;
+  TH1D* bkg;
+  TH1D* src;
 };
 
-double nosrc_noBB(double Pb, bool print = false, TH1D* F = 0);
-double src_noBB(double Pb, double Ps, bool print = false, TH1D* F = 0);
-double nosrc_BB(double Pb, bool print = false, TH1D* F = 0, TH1D* B = 0);
-double src_BB(double Pb, double Ps, bool print = false, TH1D* F = 0, TH1D* B = 0);
+double nosrc_noBB(double Pb, TH1D* F = 0);
+double src_noBB(double Pb, double Ps, TH1D* F = 0);
+double nosrc_BB(double Pb, TH1D* F = 0, TH1D* B = 0);
+double src_BB(double Pb, double Ps, TH1D* F = 0, TH1D* B = 0);
 
 #endif

@@ -8,3 +8,4 @@ bbts
 *.png
 *.csv
 *.slurm
+*.root
