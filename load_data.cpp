@@ -140,13 +140,13 @@ double loadData_bbmlm(indices_t *ins, TH1D *hist, Fit_Par_t fit_par, std::string
   std::cout << "    " << cuts.off << " failed off cut." << std::endl;
 
 
-  return 1;
+  return hist->Integral();
 }
 
 void loadData(indices_t *ins, hists_t *hists, Fit_Par_t fit_par){
   std::cout << "Loading " << get_outpath(ins, true) << std::endl;
-  loadData_bbmlm(ins, hists->dat, fit_par, "data.root");
-  loadData_bbmlm(ins, hists->bkg, fit_par, "bkg.root");
-  loadData_bbmlm(ins, hists->src, fit_par, "src.root");
+  if(!loadData_bbmlm(ins, hists->dat, fit_par, "data.root")) return;
+  if(!loadData_bbmlm(ins, hists->bkg, fit_par, "bkg.root")) return;
+  if(!loadData_bbmlm(ins, hists->src, fit_par, "src.root")) return;
   std::cout << "Histograms loaded." << std::endl;
 }

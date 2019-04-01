@@ -1,7 +1,7 @@
 #include "output.h"
 
 void init_output_root_file(){
-  TFile *fout = new TFile("output.root", "NEW");
+  TFile *fout = new TFile(OUTPUT_FILE, "NEW");
   if(!fout->IsOpen()){
     std::cerr << "Failed to init output file." << std::endl;
   }
@@ -59,7 +59,7 @@ std::string get_outpath(indices_t *ins, bool more){
   @param srcexcl Whether sources were excluded.
 */
 void write_to_root_file(indices_t *ins, hists_t *hists, double *fracs, Fit_Par_t fit_param){
-  TFile *fout = new TFile("output.root", "UPDATE");
+  TFile *fout = new TFile(OUTPUT_FILE, "UPDATE");
   if (!fout->IsOpen()){
     std::cerr << "Failed to open output file." << std::endl;
   }

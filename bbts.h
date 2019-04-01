@@ -51,6 +51,7 @@
 #define MAX_MSL 1.3
 #define MIN_MSL 0.05
 #define MIN_HEIGHT 7
+#define OUTPUT_FILE "bb_output.root"
 
 extern double ZABINS[];
 extern double EBINS[];
