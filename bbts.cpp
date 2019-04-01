@@ -266,11 +266,13 @@ void fit(indices_t *ins, args_t *args, Fit_Par_t fit_param){
   fit_src_nobb  ->ExecuteCommand("MINOS", 0, 0);
   fit_nosrc_bb  ->ExecuteCommand("MINOS", 0, 0);
   fit_src_bb    ->ExecuteCommand("MINOS", 0, 0);
-  double fracs[4];
+  double fracs[6];
   fracs[0] = fit_src_nobb->GetParameter(0);
   fracs[1] = fit_src_nobb->GetParameter(1);
   fracs[2] = fit_src_bb->GetParameter(0);
   fracs[3] = fit_src_bb->GetParameter(1);
+  fracs[4] = fit_nosrc_nobb->GetParameter(0);
+  fracs[5] = fit_nosrc_bb->GetParameter(0);
   write_to_root_file(ins, HISTS, fracs, fit_param);
   //TODO SRCEXCL
 }

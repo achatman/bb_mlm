@@ -54,6 +54,8 @@ std::string get_outpath(indices_t *ins, bool more){
     srcfrac_src_nobb
     bkgfrac_src_bb
     srcfrac_src_bb
+    bkgfrac_nosrc_nobb
+    bkgfrac_nosrc_bb
   @param fit_param Which parameter is being fit on.
   Should have the value "MSW" or "BDT".
   @param srcexcl Whether sources were excluded.
@@ -93,6 +95,23 @@ void write_to_root_file(indices_t *ins, hists_t *hists, double *fracs, Fit_Par_t
   nobb_F->Write();
   bb_F->Write();
   bb_B->Write();
+
+  //Calculate TS
+  Double_t lnL_nosrc_nobb = -nosrc_noBB(fracs[4]);
+  Double_t lnL_src_nobb = -src_noBB(fracs[0], fracs[1]);
+  Double_t lnL_nosrc_bb = -nosrc_BB(fracs[5]);
+  Double_t lnL_src_bb = -src_BB(fracs[2], fracs[3]);
+  Double_t TS_nobb = 2 * (lnL_src_nobb - lnL_nosrc_nobb);
+  Double_t TS_bb = 2 * (lnL_src_bb - lnL_nosrc_bb);
+
+  TObject ts_std;
+  ts_std.SetUniqueID(TS_nobb);
+  ts_std.Write("TS_std");
+  TObject ts_bb;
+  ts_bb.SetUniqueID(TS_bb);
+  ts_bb.Write("TS_bb");
+
+
 
   delete fout;
 }
