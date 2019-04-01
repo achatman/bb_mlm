@@ -411,7 +411,7 @@ void get_bins(vector<indices_t> *ins_list, args_t *args){
   int off_max = 4;
 
   for(int se = 0; se < 2; se ++){
-    for(int z = 3; z < za_max; z++){
+    for(int z = -1; z < za_max; z++){
       for(int e = -1; e < e_max; e++){
         for(int t = -1; t < tel_max; t++){
           for(int a = -1; a < az_max; a++){
